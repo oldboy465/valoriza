@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UEMA Valoriza - Painel Analítico & Relatórios</title>
+  
+  <!-- Chart.js para indicadores visuais -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <style>
+    :root {
+      --uema-navy: #002B49;
+      --uema-blue: #0055A5;
+      --uema-light: #EBF3FA;
+      --uema-accent: #D9822B;
+      --uema-green: #2E7D32;
+      --uema-red: #C62828;
+      --text-dark: #1C252C;
+      --text-muted: #5A6A78;
+      --bg-gray: #F4F6F9;
+      --border-color: #D1D9E2;
+      --shadow: 0 4px 12px rgba(0, 43, 73, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-gray);
+      color: var(--text-dark);
+      min-height: 100vh;
+    }
+
+    /* ==========================================================================
+       TELA DE BLOQUEIO (SENHA: 465465)
+       ========================================================================== */
+    #lock-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: linear-gradient(135deg, var(--uema-navy) 0%, #001A2C 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+      padding: 16px;
+    }
+
+    .lock-card {
+      background: #FFFFFF;
+      border-radius: 12px;
+      padding: 32px 28px;
+      width: 100%;
+      max-width: 360px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+      text-align: center;
+    }
+
+    .lock-logo-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: var(--uema-light);
+      color: var(--uema-blue);
+      margin-bottom: 16px;
+    }
+
+    .lock-card h2 {
+      font-size: 19px;
+      color: var(--uema-navy);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .lock-card p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin: 6px 0 20px;
+    }
+
+    .pin-input-wrapper {
+      position: relative;
+      margin-bottom: 16px;
+    }
+
+    .pin-input {
+      width: 100%;
+      padding: 14px 44px 14px 14px;
+      font-size: 20px;
+      text-align: center;
+      letter-spacing: 4px;
+      border: 2px solid var(--border-color);
+      border-radius: 8px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .pin-input:focus {
+      border-color: var(--uema-blue);
+      box-shadow: 0 0 0 3px rgba(0, 85, 165, 0.15);
+    }
+
+    .btn-toggle-eye {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+    }
+
+    .lock-error {
+      color: var(--uema-red);
+      font-size: 12px;
+      font-weight: 600;
+      min-height: 18px;
+      margin-top: 8px;
+    }
+
+    /* ==========================================================================
+       BARRA INSTITUCIONAL SUPERIOR
+       ========================================================================== */
+    header {
+      background: linear-gradient(135deg, var(--uema-navy) 0%, var(--uema-blue) 100%);
+      color: #FFFFFF;
+      padding: 16px 24px;
+      box-shadow: var(--shadow);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .brand-block h1 {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .brand-block span {
+      font-size: 12px;
+      opacity: 0.85;
+      display: block;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    /* ==========================================================================
+       METADADOS DE EMISSAO DO RELATORIO
+       ========================================================================== */
+    .report-meta-card {
+      background: #FFFFFF;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      padding: 14px 18px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    .report-meta-info {
+      font-size: 13px;
+      color: var(--uema-navy);
+      line-height: 1.5;
+    }
+
+    .report-issuer-input-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .report-issuer-input-group label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .report-issuer-input-group input {
+      padding: 8px 12px;
+      border: 1.5px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--uema-navy);
+      outline: none;
+      min-width: 220px;
+    }
+
+    .report-issuer-input-group input:focus {
+      border-color: var(--uema-blue);
+    }
+
+    /* ==========================================================================
+       CONTAINER & BOTOES
+       ========================================================================== */
+    .container {
+      max-width: 1200px;
+      margin: 24px auto;
+      padding: 0 16px;
+    }
+
+    .btn {
+      padding: 9px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .btn-primary { background: var(--uema-blue); color: #FFF; }
+    .btn-primary:hover { background: var(--uema-navy); }
+    .btn-success { background: var(--uema-green); color: #FFF; }
+    .btn-warning { background: var(--uema-accent); color: #FFF; }
+    .btn-danger { background: var(--uema-red); color: #FFF; }
+    .btn-outline {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.4);
+      color: #FFF;
+    }
+    .btn-outline:hover { background: rgba(255,255,255,0.1); }
+
+    /* ==========================================================================
+       CARREGAMENTO DE ARQUIVOS
+       ========================================================================== */
+    .upload-card {
+      background: #FFFFFF;
+      border-radius: 10px;
+      border: 2px dashed var(--uema-blue);
+      padding: 24px;
+      text-align: center;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .upload-card.dragover {
+      background-color: var(--uema-light);
+      border-color: var(--uema-accent);
+    }
+
+    .upload-icon {
+      width: 44px;
+      height: 44px;
+      margin: 0 auto 10px;
+      color: var(--uema-blue);
+    }
+
+    .upload-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--uema-navy);
+    }
+
+    .upload-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .upload-actions-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 14px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .files-badge {
+      font-size: 12px;
+      background: var(--uema-light);
+      color: var(--uema-navy);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    /* ==========================================================================
+       KPIS & GRAFICOS
+       ========================================================================== */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .kpi-card {
+      background: #FFFFFF;
+      border-radius: 8px;
+      padding: 16px 18px;
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow);
+      border-left: 4px solid var(--uema-blue);
+    }
+
+    .kpi-card.accent { border-left-color: var(--uema-accent); }
+    .kpi-card.green { border-left-color: var(--uema-green); }
+
+    .kpi-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    .kpi-value {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--uema-navy);
+      margin: 6px 0 2px;
+    }
+
+    .kpi-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 860px) {
+      .charts-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .chart-card {
+      background: #FFFFFF;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .chart-card h3 {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--uema-navy);
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    /* ==========================================================================
+       TABELA DE REGISTROS (CRUD COMPLETO)
+       ========================================================================== */
+    .table-card {
+      background: #FFFFFF;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .table-header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .table-title {
+      font-size: 14px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--uema-navy);
+    }
+
+    .search-box {
+      padding: 8px 12px;
+      font-size: 13px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      outline: none;
+      min-width: 240px;
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th {
+      background: var(--uema-light);
+      color: var(--uema-navy);
+      font-weight: 700;
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 2px solid var(--border-color);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #EAEFF4;
+      vertical-align: middle;
+    }
+
+    tr:hover td {
+      background-color: #F8FAFC;
+    }
+
+    .actions-cell {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .btn-action-icon {
+      background: var(--uema-light);
+      color: var(--uema-blue);
+      border: 1px solid #C4D7E8;
+      width: 30px;
+      height: 30px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .btn-action-icon:hover {
+      background: var(--uema-blue);
+      color: #FFFFFF;
+    }
+
+    .btn-action-del:hover {
+      background: var(--uema-red) !important;
+      border-color: var(--uema-red) !important;
+      color: #FFF !important;
+    }
+
+    .btn-action-edit:hover {
+      background: var(--uema-accent) !important;
+      border-color: var(--uema-accent) !important;
+      color: #FFF !important;
+    }
+
+    .tag-period {
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .tag-mat { background: #E3F2FD; color: #0D47A1; }
+    .tag-vesp { background: #FFF3E0; color: #E65100; }
+    .tag-not { background: #EDE7F6; color: #4A148C; }
+
+    /* ==========================================================================
+       MODAIS (VISUALIZACAO, EDICAO E CRIACAO)
+       ========================================================================== */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 43, 73, 0.7);
+      backdrop-filter: blur(2px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 10001;
+      padding: 16px;
+    }
+
+    .modal-box {
+      background: #FFFFFF;
+      border-radius: 10px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      background: var(--uema-navy);
+      color: #FFF;
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h3 {
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .modal-close-btn {
+      background: transparent;
+      border: none;
+      color: #FFF;
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    .modal-body {
+      padding: 20px;
+    }
+
+    .modal-form-group {
+      margin-bottom: 14px;
+    }
+
+    .modal-form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .modal-form-group input {
+      width: 100%;
+      padding: 10px;
+      border: 1.5px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .modal-form-group input:focus {
+      border-color: var(--uema-blue);
+    }
+
+    .signature-canvas-container {
+      background: #FAFAFA;
+      border: 2px dashed #BAC7D5;
+      border-radius: 8px;
+      padding: 12px;
+      margin: 14px 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #modal-canvas {
+      image-rendering: pixelated;
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    .modal-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: left;
+      background: var(--uema-light);
+      padding: 10px 14px;
+      border-radius: 6px;
+      line-height: 1.5;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    /* ==========================================================================
+       ESTILIZACAO EXCLUSIVA PARA RELATORIO IMPRESSO / PDF (UEMA OFICIAL)
+       ========================================================================== */
+    @media print {
+      body {
+        background: #FFFFFF !important;
+        color: #000000 !important;
+      }
+
+      #lock-screen,
+      .upload-card,
+      .upload-actions-bar,
+      .header-actions,
+      .search-box,
+      .modal-overlay,
+      .actions-cell,
+      th:nth-child(5), /* Oculta coluna de acoes */
+      td:nth-child(5) {
+        display: none !important;
+      }
+
+      header {
+        background: none !important;
+        color: #000000 !important;
+        padding: 0 0 14px 0 !important;
+        border-bottom: 2px solid var(--uema-navy) !important;
+        box-shadow: none !important;
+      }
+
+      .brand-block h1 {
+        font-size: 20px !important;
+        color: var(--uema-navy) !important;
+      }
+
+      .brand-block span {
+        color: #333333 !important;
+      }
+
+      .report-meta-card {
+        border: 1px solid #000 !important;
+        box-shadow: none !important;
+        padding: 10px !important;
+        margin: 12px 0 !important;
+      }
+
+      .container {
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      .kpi-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 8px !important;
+        margin-bottom: 16px !important;
+      }
+
+      .kpi-card {
+        box-shadow: none !important;
+        border: 1px solid #999999 !important;
+        padding: 8px !important;
+      }
+
+      .kpi-value {
+        font-size: 18px !important;
+      }
+
+      .charts-grid {
+        display: none !important;
+      }
+
+      .table-card {
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+      }
+
+      table {
+        font-size: 11px !important;
+      }
+
+      th {
+        background: #EEEEEE !important;
+        color: #000000 !important;
+        border-bottom: 1px solid #000000 !important;
+      }
+
+      td {
+        border-bottom: 1px solid #CCCCCC !important;
+      }
+
+      .print-sig-col {
+        display: block !important;
+      }
+    }
+
+    .print-sig-col {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========================================================================
+       TELA DE BLOQUEIO POR SENHA (SEM FORM NATIVO)
+       ======================================================================== -->
+  <div id="lock-screen">
+    <div class="lock-card">
+      <div class="lock-logo-badge">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+      </div>
+      <h2>Painel Valoriza</h2>
+      <p>Universidade Estadual do Maranhão<br>Digite a senha de segurança institucional</p>
+
+      <div class="pin-input-wrapper">
+        <input type="password" id="pin-input" class="pin-input" maxlength="6" placeholder="••••••" inputmode="numeric" autofocus autocomplete="off">
+        <button type="button" class="btn-toggle-eye" onclick="togglePasswordVisibility()" title="Exibir/Ocultar Senha">
+          <svg id="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </button>
+      </div>
+      
+      <button type="button" id="btn-submit-pin" class="btn btn-primary" style="width:100%; justify-content:center; padding:12px;">Entrar no Painel</button>
+      <div id="lock-error-msg" class="lock-error"></div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       SISTEMA PRINCIPAL
+       ======================================================================== -->
+  <div id="app-root" style="display:none;">
+    <header>
+      <div class="brand-block">
+        <h1>Projeto Valoriza — Relatórios e Indicadores</h1>
+        <span>Universidade Estadual do Maranhão (UEMA) • Terminal de Frequência</span>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-success" onclick="exportConsolidatedJSON()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          Exportar JSON Consolidado
+        </button>
+        <button class="btn btn-outline" onclick="exportToPDF()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+          Exportar PDF / Imprimir
+        </button>
+        <button class="btn btn-outline" style="background:rgba(217,130,43,0.25);" onclick="lockSystem()">
+          Bloquear
+        </button>
+      </div>
+    </header>
+
+    <div class="container">
+      <!-- Metadados do Relatorio (Emissor & Data BR) -->
+      <div class="report-meta-card">
+        <div class="report-meta-info">
+          <div><b>Relatório Oficial de Frequência e Atendimento</b></div>
+          <div id="report-generation-time">Gerado em: --/--/---- às --:--:--</div>
+        </div>
+        <div class="report-issuer-input-group">
+          <label for="report-issuer-name">Responsável:</label>
+          <input type="text" id="report-issuer-name" placeholder="Nome de quem gerou o relatório..." oninput="updateIssuerDisplay()">
+        </div>
+      </div>
+
+      <!-- Upload Múltiplo e Cumulativo -->
+      <div class="upload-card" id="drop-zone" onclick="document.getElementById('file-input').click()">
+        <input type="file" id="file-input" style="display:none;" accept=".json" multiple onchange="handleFileSelect(event)">
+        <div class="upload-icon">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+        </div>
+        <div class="upload-title">Clique ou arraste um ou vários arquivos JSON de frequências</div>
+        <div class="upload-subtitle">Os dados serão somados/acumulados e ordenados cronologicamente de forma automática</div>
+      </div>
+
+      <div class="upload-actions-bar">
+        <div class="files-badge" id="records-counter-badge">Base Consolidada: 0 registro(s)</div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-primary" onclick="openCreateModal()">+ Novo Registro</button>
+          <button class="btn btn-danger" onclick="clearAllData()">Limpar Registros</button>
+        </div>
+      </div>
+
+      <!-- Indicadores / KPIs -->
+      <div class="kpi-grid" style="margin-top:20px;">
+        <div class="kpi-card">
+          <div class="kpi-title">Total de Atendimentos</div>
+          <div class="kpi-value" id="kpi-total">0</div>
+          <div class="kpi-sub" id="kpi-total-sub">Nenhum dado importado</div>
+        </div>
+        <div class="kpi-card green">
+          <div class="kpi-title">Participantes Únicos</div>
+          <div class="kpi-value" id="kpi-unique">0</div>
+          <div class="kpi-sub">Indivíduos distintos atendidos</div>
+        </div>
+        <div class="kpi-card accent">
+          <div class="kpi-title">Pico de Atendimento</div>
+          <div class="kpi-value" id="kpi-peak">--:00</div>
+          <div class="kpi-sub" id="kpi-peak-sub">Faixa com maior frequência</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Turno Predominante</div>
+          <div class="kpi-value" id="kpi-shift">--</div>
+          <div class="kpi-sub" id="kpi-shift-sub">Concentração diária</div>
+        </div>
+      </div>
+
+      <!-- Graficos -->
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3>Fluxo de Assinaturas por Horário</h3>
+          <div style="position: relative; height: 240px;">
+            <canvas id="chart-hours"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <h3>Distribuição por Turno</h3>
+          <div style="position: relative; height: 240px;">
+            <canvas id="chart-shifts"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabela CRUD -->
+      <div class="table-card">
+        <div class="table-header-bar">
+          <div class="table-title">Lista Completa de Presenças</div>
+          <input type="text" id="table-search" class="search-box" placeholder="Filtrar por nome ou data..." oninput="filterTable()">
+        </div>
+
+        <div class="table-wrapper">
+          <table id="attendees-table">
+            <thead>
+              <tr>
+                <th style="width:50px;">#</th>
+                <th>Nome Completo</th>
+                <th>Data e Hora (BR)</th>
+                <th>Turno</th>
+                <th style="text-align:center; width:120px;">Ações</th>
+                <th class="print-sig-col">Comprovante Impresso</th>
+              </tr>
+            </thead>
+            <tbody id="table-body">
+              <tr>
+                <td colspan="5" style="text-align:center; color:var(--text-muted); padding:30px;">
+                  Nenhum registro carregado. Importe um arquivo JSON ou cadastre um novo registro acima.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: VISUALIZADOR DE ASSINATURA -->
+  <div class="modal-overlay" id="sig-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="modal-title">Assinatura Digital</h3>
+        <button class="modal-close-btn" onclick="closeModal('sig-modal')">&times;</button>
+      </div>
+      <div class="modal-body" style="text-align:center;">
+        <div class="signature-canvas-container">
+          <canvas id="modal-canvas" width="320" height="120"></canvas>
+        </div>
+        <div class="modal-meta" id="modal-meta"></div>
+        <div class="modal-actions">
+          <button class="btn btn-primary" style="flex:1;" onclick="downloadCurrentSignature()">Baixar Imagem PNG</button>
+          <button class="btn btn-warning" style="background:#5A6A78;" onclick="closeModal('sig-modal')">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: NOVO REGISTRO (CREATE) -->
+  <div class="modal-overlay" id="create-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Adicionar Presença Manual</h3>
+        <button class="modal-close-btn" onclick="closeModal('create-modal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-form-group">
+          <label for="create-name">Nome do Usuário:</label>
+          <input type="text" id="create-name" placeholder="Ex: Maria Silva">
+        </div>
+        <div class="modal-form-group">
+          <label for="create-datetime">Data e Hora:</label>
+          <input type="datetime-local" id="create-datetime">
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-success" style="flex:1;" onclick="saveNewRecord()">Salvar Registro</button>
+          <button class="btn btn-warning" style="background:#5A6A78;" onclick="closeModal('create-modal')">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: EDITAR REGISTRO (UPDATE) -->
+  <div class="modal-overlay" id="edit-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Editar Presença</h3>
+        <button class="modal-close-btn" onclick="closeModal('edit-modal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="edit-record-id">
+        <div class="modal-form-group">
+          <label for="edit-name">Nome Completo:</label>
+          <input type="text" id="edit-name">
+        </div>
+        <div class="modal-form-group">
+          <label for="edit-datetime">Data e Hora:</label>
+          <input type="datetime-local" id="edit-datetime">
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-success" style="flex:1;" onclick="saveEditedRecord()">Atualizar Registro</button>
+          <button class="btn btn-warning" style="background:#5A6A78;" onclick="closeModal('edit-modal')">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ========================================================================
+    // AUTENTICACAO (SENHA: 465465)
+    // ========================================================================
+    const AUTH_PIN = "465465";
+    const pinInput = document.getElementById('pin-input');
+    const submitBtn = document.getElementById('btn-submit-pin');
+    const errorMsg = document.getElementById('lock-error-msg');
+
+    function checkPassword() {
+      const entered = pinInput.value.trim();
+      if (entered === AUTH_PIN) {
+        errorMsg.innerText = "";
+        try { sessionStorage.setItem('uema_valoriza_auth', 'true'); } catch(e) {}
+        unlockApp();
+      } else {
+        if (entered.length >= 6) {
+          errorMsg.innerText = "Senha incorreta. Tente novamente.";
+          pinInput.value = "";
+          pinInput.focus();
+        }
+      }
+    }
+
+    submitBtn.addEventListener('click', checkPassword);
+    pinInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); checkPassword(); }
+    });
+    pinInput.addEventListener('input', () => {
+      if (pinInput.value.trim().length === 6) checkPassword();
+    });
+
+    function togglePasswordVisibility() {
+      pinInput.type = (pinInput.type === 'password') ? 'text' : 'password';
+    }
+
+    function unlockApp() {
+      document.getElementById('lock-screen').style.display = 'none';
+      document.getElementById('app-root').style.display = 'block';
+      updateReportGenerationTimestamp();
+      initCharts();
+    }
+
+    function lockSystem() {
+      try { sessionStorage.removeItem('uema_valoriza_auth'); } catch(e) {}
+      document.getElementById('app-root').style.display = 'none';
+      document.getElementById('lock-screen').style.display = 'flex';
+      pinInput.value = "";
+      errorMsg.innerText = "";
+    }
+
+    window.addEventListener('load', () => {
+      try {
+        if (sessionStorage.getItem('uema_valoriza_auth') === 'true') {
+          unlockApp();
+        }
+      } catch(e) {}
+    });
+
+    // ========================================================================
+    // FORMATACAO DE DATAS BR (DD/MM/AAAA HH:MM:SS) & METADADOS
+    // ========================================================================
+    function parseDate(dateStr) {
+      if (!dateStr) return new Date();
+      const iso = dateStr.replace(' ', 'T');
+      const d = new Date(iso);
+      return isNaN(d.getTime()) ? new Date() : d;
+    }
+
+    function formatDateBR(dateStr) {
+      const d = parseDate(dateStr);
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
+
+    function updateReportGenerationTimestamp() {
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const strBR = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} às ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+      const issuer = document.getElementById('report-issuer-name').value.trim() || 'Não informado';
+      document.getElementById('report-generation-time').innerText = `Relatório gerado em: ${strBR} • Responsável: ${issuer}`;
+    }
+
+    function updateIssuerDisplay() {
+      updateReportGenerationTimestamp();
+    }
+
+    // ========================================================================
+    // DECODIFICADOR RLE HEX (128x48 BITS)
+    // ========================================================================
+    function decodeRLEToImageData(rleHex, width = 128, height = 48) {
+      if (!rleHex) return new ImageData(width, height);
+      const cleanHex = rleHex.trim();
+      const rawBytes = [];
+      for (let i = 0; i < cleanHex.length; i += 2) {
+        rawBytes.push(parseInt(cleanHex.substr(i, 2), 16));
+      }
+
+      const decompressed = [];
+      for (let i = 0; i < rawBytes.length; i += 2) {
+        const count = rawBytes[i];
+        const val = rawBytes[i + 1] !== undefined ? rawBytes[i + 1] : 0;
+        for (let c = 0; c < count; c++) {
+          decompressed.push(val);
+        }
+      }
+
+      const imgData = new ImageData(width, height);
+      for (let y = 0; y < height; y++) {
+        const page = Math.floor(y / 8);
+        const bit = y % 8;
+        for (let x = 0; x < width; x++) {
+          const byteIdx = x + page * width;
+          const byteVal = decompressed[byteIdx] || 0;
+          const isPixelSet = (byteVal & (1 << bit)) !== 0;
+          const pxIdx = (y * width + x) * 4;
+
+          if (isPixelSet) {
+            imgData.data[pxIdx] = 0;
+            imgData.data[pxIdx + 1] = 43;
+            imgData.data[pxIdx + 2] = 73;
+            imgData.data[pxIdx + 3] = 255;
+          } else {
+            imgData.data[pxIdx] = 255;
+            imgData.data[pxIdx + 1] = 255;
+            imgData.data[pxIdx + 2] = 255;
+            imgData.data[pxIdx + 3] = 0;
+          }
+        }
+      }
+      return imgData;
+    }
+
+    function renderSignatureOnCanvas(rleHex, canvasElement, destWidth, destHeight) {
+      const offscreen = document.createElement('canvas');
+      offscreen.width = 128;
+      offscreen.height = 48;
+      const offCtx = offscreen.getContext('2d');
+      const imgData = decodeRLEToImageData(rleHex, 128, 48);
+      offCtx.putImageData(imgData, 0, 0);
+
+      canvasElement.width = destWidth;
+      canvasElement.height = destHeight;
+      const ctx = canvasElement.getContext('2d');
+      ctx.clearRect(0, 0, destWidth, destHeight);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(offscreen, 0, 0, destWidth, destHeight);
+    }
+
+    // ========================================================================
+    // BANCO DE DADOS EM MEMORIA & CONSOLIDACAO CRONOLOGICA
+    // ========================================================================
+    let allRecords = [];
+    let currentSelectedRecord = null;
+
+    function addRecordsCumulatively(newItems) {
+      if (!Array.isArray(newItems)) return;
+
+      newItems.forEach(item => {
+        // Evita duplicidade estrita
+        const exists = allRecords.some(r => 
+          r.nome === item.nome && 
+          r.data_hora === item.data_hora &&
+          r.rle_hex === item.rle_hex
+        );
+        if (!exists) {
+          allRecords.push({
+            id: item.id || (allRecords.length + 1),
+            nome: item.nome || 'USUARIO',
+            data_hora: item.data_hora || new Date().toISOString().replace('T', ' ').substring(0, 19),
+            largura: item.largura || 128,
+            altura: item.altura || 48,
+            rle_hex: item.rle_hex || ''
+          });
+        }
+      });
+
+      // Ordenacao cronologica estrita
+      sortRecordsChronologically();
+      updateDashboard();
+    }
+
+    function sortRecordsChronologically() {
+      allRecords.sort((a, b) => parseDate(a.data_hora) - parseDate(b.data_hora));
+      // Reatribui IDs ordenados para manter coerencia visual
+      allRecords.forEach((r, idx) => { r.id = idx + 1; });
+    }
+
+    function handleFileSelect(evt) {
+      const files = evt.target.files;
+      if (!files || files.length === 0) return;
+
+      Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const json = JSON.parse(e.target.result);
+            addRecordsCumulatively(json);
+          } catch (err) {
+            alert("Erro ao ler " + file.name + ": Formato JSON inválido.");
+          }
+        };
+        reader.readAsText(file);
+      });
+      evt.target.value = "";
+    }
+
+    const dropZone = document.getElementById('drop-zone');
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        handleFileSelect({ target: { files: e.dataTransfer.files } });
+      }
+    });
+
+    function clearAllData() {
+      if (confirm("Deseja realmente apagar todos os registros da sessão?")) {
+        allRecords = [];
+        updateDashboard();
+      }
+    }
+
+    // ========================================================================
+    // CRUD: CRIAR, EDITAR E EXCLUIR
+    // ========================================================================
+    function openCreateModal() {
+      document.getElementById('create-name').value = '';
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      document.getElementById('create-datetime').value = now.toISOString().slice(0, 16);
+      document.getElementById('create-modal').style.display = 'flex';
+    }
+
+    function saveNewRecord() {
+      const name = document.getElementById('create-name').value.trim();
+      const dtVal = document.getElementById('create-datetime').value;
+      if (!name) { alert("Informe o nome do usuário."); return; }
+      if (!dtVal) { alert("Informe a data e hora."); return; }
+
+      const formattedDt = dtVal.replace('T', ' ') + ":00";
+      allRecords.push({
+        id: allRecords.length + 1,
+        nome: name,
+        data_hora: formattedDt,
+        largura: 128,
+        altura: 48,
+        rle_hex: "" // Assinatura manual/vazia
+      });
+
+      sortRecordsChronologically();
+      updateDashboard();
+      closeModal('create-modal');
+    }
+
+    function editRecord(index) {
+      const r = allRecords[index];
+      if (!r) return;
+      document.getElementById('edit-record-id').value = index;
+      document.getElementById('edit-name').value = r.nome;
+
+      const d = parseDate(r.data_hora);
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      document.getElementById('edit-datetime').value = d.toISOString().slice(0, 16);
+
+      document.getElementById('edit-modal').style.display = 'flex';
+    }
+
+    function saveEditedRecord() {
+      const idx = parseInt(document.getElementById('edit-record-id').value, 10);
+      const name = document.getElementById('edit-name').value.trim();
+      const dtVal = document.getElementById('edit-datetime').value;
+
+      if (!name) { alert("Informe o nome."); return; }
+      if (!dtVal) { alert("Informe data e hora."); return; }
+
+      allRecords[idx].nome = name;
+      allRecords[idx].data_hora = dtVal.replace('T', ' ') + ":00";
+
+      sortRecordsChronologically();
+      updateDashboard();
+      closeModal('edit-modal');
+    }
+
+    function deleteRecord(index) {
+      const r = allRecords[index];
+      if (!r) return;
+      if (confirm(`Excluir a presença de ${r.nome} (#${r.id})?`)) {
+        allRecords.splice(index, 1);
+        sortRecordsChronologically();
+        updateDashboard();
+      }
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).style.display = 'none';
+    }
+
+    // ========================================================================
+    // CONSOLIDACAO EM JSON UNICO (EXPORTACAO)
+    // ========================================================================
+    function exportConsolidatedJSON() {
+      if (allRecords.length === 0) {
+        alert("Nenhum registro para consolidar.");
+        return;
+      }
+      sortRecordsChronologically();
+      const jsonStr = JSON.stringify(allRecords, null, 2);
+      const blob = new Blob([jsonStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const fileDate = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+      a.download = `uema_valoriza_consolidado_${fileDate}.json`;
+      a.href = url;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // ========================================================================
+    // INDICADORES, GRAFICOS & RENDERIZACAO
+    // ========================================================================
+    let hoursChart = null;
+    let shiftsChart = null;
+
+    function initCharts() {
+      if (hoursChart && shiftsChart) return;
+      if (typeof Chart === 'undefined') return;
+
+      const ctxHours = document.getElementById('chart-hours').getContext('2d');
+      hoursChart = new Chart(ctxHours, {
+        type: 'bar',
+        data: {
+          labels: ['07h','08h','09h','10h','11h','12h','13h','14h','15h','16h','17h','18h','19h','20h'],
+          datasets: [{
+            label: 'Atendimentos',
+            data: new Array(14).fill(0),
+            backgroundColor: '#0055A5',
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, ticks: { precision: 0 } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+
+      const ctxShifts = document.getElementById('chart-shifts').getContext('2d');
+      shiftsChart = new Chart(ctxShifts, {
+        type: 'doughnut',
+        data: {
+          labels: ['Matutino', 'Vespertino', 'Noturno'],
+          datasets: [{
+            data: [0, 0, 0],
+            backgroundColor: ['#0055A5', '#D9822B', '#002B49']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom' } }
+        }
+      });
+    }
+
+    function getShift(hour) {
+      if (hour >= 6 && hour < 12) return { name: 'Matutino', class: 'tag-mat' };
+      if (hour >= 12 && hour < 18) return { name: 'Vespertino', class: 'tag-vesp' };
+      return { name: 'Noturno', class: 'tag-not' };
+    }
+
+    function updateDashboard() {
+      const total = allRecords.length;
+      document.getElementById('records-counter-badge').innerText = `Base Consolidada: ${total} registro(s)`;
+      document.getElementById('kpi-total').innerText = total;
+
+      if (total === 0) {
+        document.getElementById('kpi-total-sub').innerText = "Nenhum dado importado";
+        document.getElementById('kpi-unique').innerText = "0";
+        document.getElementById('kpi-peak').innerText = "--:00";
+        document.getElementById('kpi-peak-sub').innerText = "Sem dados";
+        document.getElementById('kpi-shift').innerText = "--";
+        renderTable([]);
+        if (hoursChart && shiftsChart) {
+          hoursChart.data.datasets[0].data = new Array(14).fill(0);
+          hoursChart.update();
+          shiftsChart.data.datasets[0].data = [0, 0, 0];
+          shiftsChart.update();
+        }
+        return;
+      }
+
+      const uniqueNames = new Set(allRecords.map(r => r.nome.trim().toUpperCase()));
+      document.getElementById('kpi-unique').innerText = uniqueNames.size;
+
+      const hourCounts = new Array(24).fill(0);
+      let mat = 0, vesp = 0, notu = 0;
+
+      allRecords.forEach(r => {
+        const d = parseDate(r.data_hora);
+        const h = d.getHours();
+        hourCounts[h]++;
+        if (h >= 6 && h < 12) mat++;
+        else if (h >= 12 && h < 18) vesp++;
+        else notu++;
+      });
+
+      let maxH = 0, maxCount = 0;
+      for (let i = 0; i < 24; i++) {
+        if (hourCounts[i] > maxCount) {
+          maxCount = hourCounts[i];
+          maxH = i;
+        }
+      }
+      document.getElementById('kpi-peak').innerText = `${String(maxH).padStart(2, '0')}:00`;
+      document.getElementById('kpi-peak-sub').innerText = `${maxCount} presença(s) registrada(s)`;
+
+      let mainShift = "Matutino";
+      if (vesp >= mat && vesp >= notu) mainShift = "Vespertino";
+      if (notu >= mat && notu >= vesp) mainShift = "Noturno";
+      document.getElementById('kpi-shift').innerText = mainShift;
+      document.getElementById('kpi-shift-sub').innerText = `${Math.max(mat, vesp, notu)} registro(s)`;
+
+      if (hoursChart) {
+        hoursChart.data.datasets[0].data = hourCounts.slice(7, 21);
+        hoursChart.update();
+      }
+
+      if (shiftsChart) {
+        shiftsChart.data.datasets[0].data = [mat, vesp, notu];
+        shiftsChart.update();
+      }
+
+      renderTable(allRecords);
+    }
+
+    function renderTable(data) {
+      const tbody = document.getElementById('table-body');
+      tbody.innerHTML = '';
+
+      if (data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:30px;">Nenhum registro encontrado.</td></tr>`;
+        return;
+      }
+
+      data.forEach((r, idx) => {
+        const d = parseDate(r.data_hora);
+        const h = d.getHours();
+        const shift = getShift(h);
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><b>#${r.id}</b></td>
+          <td><b>${escapeHtml(r.nome)}</b></td>
+          <td>${formatDateBR(r.data_hora)}</td>
+          <td><span class="tag-period ${shift.class}">${shift.name}</span></td>
+          <td style="text-align:center;">
+            <div class="actions-cell">
+              <button class="btn-action-icon" title="Ver Assinatura" onclick="openSignatureModal(${idx})">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+              <button class="btn-action-icon btn-action-edit" title="Editar" onclick="editRecord(${idx})">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+              </button>
+              <button class="btn-action-icon btn-action-del" title="Excluir" onclick="deleteRecord(${idx})">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              </button>
+            </div>
+          </td>
+          <td class="print-sig-col">
+            <canvas id="print-canvas-${idx}" width="128" height="48" style="border:1px solid #ccc;"></canvas>
+          </td>
+        `;
+        tbody.appendChild(tr);
+
+        setTimeout(() => {
+          const printCvs = document.getElementById(`print-canvas-${idx}`);
+          if (printCvs && r.rle_hex) renderSignatureOnCanvas(r.rle_hex, printCvs, 128, 48);
+        }, 10);
+      });
+    }
+
+    function filterTable() {
+      const term = document.getElementById('table-search').value.toLowerCase().trim();
+      const filtered = allRecords.filter(r => 
+        r.nome.toLowerCase().includes(term) || 
+        formatDateBR(r.data_hora).toLowerCase().includes(term)
+      );
+      renderTable(filtered);
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ========================================================================
+    // VISUALIZADOR DE ASSINATURA
+    // ========================================================================
+    function openSignatureModal(index) {
+      const record = allRecords[index];
+      if (!record) return;
+      currentSelectedRecord = record;
+
+      document.getElementById('modal-title').innerText = `Assinatura: ${record.nome}`;
+      const cvs = document.getElementById('modal-canvas');
+      renderSignatureOnCanvas(record.rle_hex, cvs, 320, 120);
+
+      document.getElementById('modal-meta').innerHTML = `
+        <div><b>Nome:</b> ${escapeHtml(record.nome)}</div>
+        <div><b>Data e Hora (BR):</b> ${formatDateBR(record.data_hora)}</div>
+        <div><b>Status Assinatura:</b> ${record.rle_hex ? 'Vetor RLE Gravado' : 'Sem assinatura gráfica'}</div>
+      `;
+
+      document.getElementById('sig-modal').style.display = 'flex';
+    }
+
+    function downloadCurrentSignature() {
+      if (!currentSelectedRecord) return;
+      const cvs = document.getElementById('modal-canvas');
+      const a = document.createElement('a');
+      a.download = `assinatura_${currentSelectedRecord.nome.replace(/\s+/g, '_')}_${currentSelectedRecord.id}.png`;
+      a.href = cvs.toDataURL('image/png');
+      a.click();
+    }
+
+    function exportToPDF() {
+      if (allRecords.length === 0) {
+        alert("Carregue ou adicione ao menos um registro antes de gerar o relatório.");
+        return;
+      }
+      updateReportGenerationTimestamp();
+      window.print();
+    }
+  </script>
+</body>
+</html>
