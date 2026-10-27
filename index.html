@@ -3,1490 +3,2325 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>UEMA Valoriza - Painel Analítico & Relatórios</title>
+  <title>UEMA Valoriza - Painel de Frequência & Auditoria Biométrica</title>
   
-  <!-- Chart.js para indicadores visuais -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            uema: {
+              50: '#f0f7ff',
+              100: '#e0effe',
+              600: '#0284c7',
+              700: '#0369a1',
+              800: '#075985',
+              900: '#0c4a6e',
+              navy: '#0b2046',
+              maroon: '#991b1b'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Fira Code', 'Courier New', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts & FontAwesome -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Apache ECharts -->
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+
+  <!-- SheetJS (Leitura e Geração de Planilhas Excel .XLSX) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <style>
-    :root {
-      --uema-navy: #002B49;
-      --uema-blue: #0055A5;
-      --uema-light: #EBF3FA;
-      --uema-accent: #D9822B;
-      --uema-green: #2E7D32;
-      --uema-red: #C62828;
-      --text-dark: #1C252C;
-      --text-muted: #5A6A78;
-      --bg-gray: #F4F6F9;
-      --border-color: #D1D9E2;
-      --shadow: 0 4px 12px rgba(0, 43, 73, 0.08);
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
-
-    body {
-      background-color: var(--bg-gray);
-      color: var(--text-dark);
-      min-height: 100vh;
-    }
-
-    /* ==========================================================================
-       TELA DE BLOQUEIO (SENHA: 465465)
-       ========================================================================== */
-    #lock-screen {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: linear-gradient(135deg, var(--uema-navy) 0%, #001A2C 100%);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 10000;
-      padding: 16px;
-    }
-
-    .lock-card {
-      background: #FFFFFF;
-      border-radius: 12px;
-      padding: 32px 28px;
-      width: 100%;
-      max-width: 360px;
-      box-shadow: 0 12px 32px rgba(0,0,0,0.4);
-      text-align: center;
-    }
-
-    .lock-logo-badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 64px;
-      height: 64px;
-      border-radius: 50%;
-      background: var(--uema-light);
-      color: var(--uema-blue);
-      margin-bottom: 16px;
-    }
-
-    .lock-card h2 {
-      font-size: 19px;
-      color: var(--uema-navy);
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .lock-card p {
-      font-size: 13px;
-      color: var(--text-muted);
-      margin: 6px 0 20px;
-    }
-
-    .pin-input-wrapper {
-      position: relative;
-      margin-bottom: 16px;
-    }
-
-    .pin-input {
-      width: 100%;
-      padding: 14px 44px 14px 14px;
-      font-size: 20px;
-      text-align: center;
-      letter-spacing: 4px;
-      border: 2px solid var(--border-color);
-      border-radius: 8px;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    .pin-input:focus {
-      border-color: var(--uema-blue);
-      box-shadow: 0 0 0 3px rgba(0, 85, 165, 0.15);
-    }
-
-    .btn-toggle-eye {
-      position: absolute;
-      right: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 4px;
-    }
-
-    .lock-error {
-      color: var(--uema-red);
-      font-size: 12px;
-      font-weight: 600;
-      min-height: 18px;
-      margin-top: 8px;
-    }
-
-    /* ==========================================================================
-       BARRA INSTITUCIONAL SUPERIOR
-       ========================================================================== */
-    header {
-      background: linear-gradient(135deg, var(--uema-navy) 0%, var(--uema-blue) 100%);
-      color: #FFFFFF;
-      padding: 16px 24px;
-      box-shadow: var(--shadow);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-
-    .brand-block h1 {
-      font-size: 18px;
-      font-weight: 800;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-    }
-
-    .brand-block span {
-      font-size: 12px;
-      opacity: 0.85;
-      display: block;
-    }
-
-    .header-actions {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    /* ==========================================================================
-       METADADOS DE EMISSAO DO RELATORIO
-       ========================================================================== */
-    .report-meta-card {
-      background: #FFFFFF;
-      border-radius: 8px;
-      border: 1px solid var(--border-color);
-      padding: 14px 18px;
-      margin-bottom: 20px;
-      box-shadow: var(--shadow);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 14px;
-    }
-
-    .report-meta-info {
-      font-size: 13px;
-      color: var(--uema-navy);
-      line-height: 1.5;
-    }
-
-    .report-issuer-input-group {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .report-issuer-input-group label {
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--text-muted);
-      text-transform: uppercase;
-    }
-
-    .report-issuer-input-group input {
-      padding: 8px 12px;
-      border: 1.5px solid var(--border-color);
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--uema-navy);
-      outline: none;
-      min-width: 220px;
-    }
-
-    .report-issuer-input-group input:focus {
-      border-color: var(--uema-blue);
-    }
-
-    /* ==========================================================================
-       CONTAINER & BOTOES
-       ========================================================================== */
-    .container {
-      max-width: 1200px;
-      margin: 24px auto;
-      padding: 0 16px;
-    }
-
-    .btn {
-      padding: 9px 16px;
-      font-size: 12px;
-      font-weight: 700;
-      border-radius: 6px;
-      border: none;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.2s;
-      text-transform: uppercase;
-      letter-spacing: 0.4px;
-    }
-
-    .btn-primary { background: var(--uema-blue); color: #FFF; }
-    .btn-primary:hover { background: var(--uema-navy); }
-    .btn-success { background: var(--uema-green); color: #FFF; }
-    .btn-warning { background: var(--uema-accent); color: #FFF; }
-    .btn-danger { background: var(--uema-red); color: #FFF; }
-    .btn-outline {
-      background: transparent;
-      border: 1px solid rgba(255,255,255,0.4);
-      color: #FFF;
-    }
-    .btn-outline:hover { background: rgba(255,255,255,0.1); }
-
-    /* ==========================================================================
-       CARREGAMENTO DE ARQUIVOS
-       ========================================================================== */
-    .upload-card {
-      background: #FFFFFF;
-      border-radius: 10px;
-      border: 2px dashed var(--uema-blue);
-      padding: 24px;
-      text-align: center;
-      margin-bottom: 20px;
-      box-shadow: var(--shadow);
-      cursor: pointer;
-      transition: 0.2s;
-    }
-
-    .upload-card.dragover {
-      background-color: var(--uema-light);
-      border-color: var(--uema-accent);
-    }
-
-    .upload-icon {
-      width: 44px;
-      height: 44px;
-      margin: 0 auto 10px;
-      color: var(--uema-blue);
-    }
-
-    .upload-title {
-      font-size: 15px;
-      font-weight: 700;
-      color: var(--uema-navy);
-    }
-
-    .upload-subtitle {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-
-    .upload-actions-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 14px;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .files-badge {
-      font-size: 12px;
-      background: var(--uema-light);
-      color: var(--uema-navy);
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-weight: 600;
-    }
-
-    /* ==========================================================================
-       KPIS & GRAFICOS
-       ========================================================================== */
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 14px;
-      margin-bottom: 24px;
-    }
-
-    .kpi-card {
-      background: #FFFFFF;
-      border-radius: 8px;
-      padding: 16px 18px;
-      border: 1px solid var(--border-color);
-      box-shadow: var(--shadow);
-      border-left: 4px solid var(--uema-blue);
-    }
-
-    .kpi-card.accent { border-left-color: var(--uema-accent); }
-    .kpi-card.green { border-left-color: var(--uema-green); }
-
-    .kpi-title {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      letter-spacing: 0.5px;
-    }
-
-    .kpi-value {
-      font-size: 26px;
-      font-weight: 800;
-      color: var(--uema-navy);
-      margin: 6px 0 2px;
-    }
-
-    .kpi-sub {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    .charts-grid {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    @media (max-width: 860px) {
-      .charts-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .chart-card {
-      background: #FFFFFF;
-      border-radius: 8px;
-      border: 1px solid var(--border-color);
-      padding: 18px;
-      box-shadow: var(--shadow);
-    }
-
-    .chart-card h3 {
-      font-size: 13px;
-      font-weight: 800;
-      color: var(--uema-navy);
-      text-transform: uppercase;
-      margin-bottom: 14px;
-    }
-
-    /* ==========================================================================
-       TABELA DE REGISTROS (CRUD COMPLETO)
-       ========================================================================== */
-    .table-card {
-      background: #FFFFFF;
-      border-radius: 8px;
-      border: 1px solid var(--border-color);
-      padding: 18px;
-      box-shadow: var(--shadow);
-    }
-
-    .table-header-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 14px;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .table-title {
-      font-size: 14px;
-      font-weight: 800;
-      text-transform: uppercase;
-      color: var(--uema-navy);
-    }
-
-    .search-box {
-      padding: 8px 12px;
-      font-size: 13px;
-      border: 1px solid var(--border-color);
-      border-radius: 6px;
-      outline: none;
-      min-width: 240px;
-    }
-
-    .table-wrapper {
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-
-    th {
-      background: var(--uema-light);
-      color: var(--uema-navy);
-      font-weight: 700;
-      text-align: left;
-      padding: 10px 12px;
-      border-bottom: 2px solid var(--border-color);
-      white-space: nowrap;
-    }
-
-    td {
-      padding: 10px 12px;
-      border-bottom: 1px solid #EAEFF4;
-      vertical-align: middle;
-    }
-
-    tr:hover td {
-      background-color: #F8FAFC;
-    }
-
-    .actions-cell {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-    }
-
-    .btn-action-icon {
-      background: var(--uema-light);
-      color: var(--uema-blue);
-      border: 1px solid #C4D7E8;
-      width: 30px;
-      height: 30px;
-      border-radius: 6px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.15s;
-    }
-
-    .btn-action-icon:hover {
-      background: var(--uema-blue);
-      color: #FFFFFF;
-    }
-
-    .btn-action-del:hover {
-      background: var(--uema-red) !important;
-      border-color: var(--uema-red) !important;
-      color: #FFF !important;
-    }
-
-    .btn-action-edit:hover {
-      background: var(--uema-accent) !important;
-      border-color: var(--uema-accent) !important;
-      color: #FFF !important;
-    }
-
-    .tag-period {
-      padding: 3px 8px;
-      border-radius: 12px;
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-
-    .tag-mat { background: #E3F2FD; color: #0D47A1; }
-    .tag-vesp { background: #FFF3E0; color: #E65100; }
-    .tag-not { background: #EDE7F6; color: #4A148C; }
-
-    /* ==========================================================================
-       MODAIS (VISUALIZACAO, EDICAO E CRIACAO)
-       ========================================================================== */
-    .modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0, 43, 73, 0.7);
-      backdrop-filter: blur(2px);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 10001;
-      padding: 16px;
-    }
-
-    .modal-box {
-      background: #FFFFFF;
-      border-radius: 10px;
-      width: 100%;
-      max-width: 440px;
-      box-shadow: 0 16px 40px rgba(0,0,0,0.3);
-      overflow: hidden;
-    }
-
-    .modal-header {
-      background: var(--uema-navy);
-      color: #FFF;
-      padding: 14px 18px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .modal-header h3 {
-      font-size: 14px;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-
-    .modal-close-btn {
-      background: transparent;
-      border: none;
-      color: #FFF;
-      font-size: 20px;
-      cursor: pointer;
-    }
-
-    .modal-body {
-      padding: 20px;
-    }
-
-    .modal-form-group {
-      margin-bottom: 14px;
-    }
-
-    .modal-form-group label {
-      display: block;
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--text-muted);
-      margin-bottom: 6px;
-      text-transform: uppercase;
-    }
-
-    .modal-form-group input {
-      width: 100%;
-      padding: 10px;
-      border: 1.5px solid var(--border-color);
-      border-radius: 6px;
-      font-size: 14px;
-      outline: none;
-    }
-
-    .modal-form-group input:focus {
-      border-color: var(--uema-blue);
-    }
-
-    .signature-canvas-container {
-      background: #FAFAFA;
-      border: 2px dashed #BAC7D5;
-      border-radius: 8px;
-      padding: 12px;
-      margin: 14px 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    #modal-canvas {
+    /* Suporte a canvas pixel-art e nitidez biométrica */
+    .pixelated {
       image-rendering: pixelated;
-      background: #FFFFFF;
-      border: 1px solid #E2E8F0;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+      image-rendering: -moz-crisp-edges;
+      image-rendering: crisp-edges;
     }
 
-    .modal-meta {
-      font-size: 12px;
-      color: var(--text-muted);
-      text-align: left;
-      background: var(--uema-light);
-      padding: 10px 14px;
-      border-radius: 6px;
-      line-height: 1.5;
+    /* Animação de erro (shake) para a tela de autenticação */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+    .shake-anim {
+      animation: shake 0.35s ease-in-out;
     }
 
-    .modal-actions {
-      display: flex;
-      gap: 8px;
-      margin-top: 16px;
-    }
-
-    /* ==========================================================================
-       ESTILIZACAO EXCLUSIVA PARA RELATORIO IMPRESSO / PDF (UEMA OFICIAL)
-       ========================================================================== */
+    /* Estilos dedicados para impressão e emissão formal de PDF */
     @media print {
-      body {
-        background: #FFFFFF !important;
-        color: #000000 !important;
+      body * {
+        visibility: hidden;
       }
-
-      #lock-screen,
-      .upload-card,
-      .upload-actions-bar,
-      .header-actions,
-      .search-box,
-      .modal-overlay,
-      .actions-cell,
-      th:nth-child(5), /* Oculta coluna de acoes */
-      td:nth-child(5) {
-        display: none !important;
+      #printReportContainer, #printReportContainer * {
+        visibility: visible;
       }
-
-      header {
-        background: none !important;
-        color: #000000 !important;
-        padding: 0 0 14px 0 !important;
-        border-bottom: 2px solid var(--uema-navy) !important;
-        box-shadow: none !important;
-      }
-
-      .brand-block h1 {
-        font-size: 20px !important;
-        color: var(--uema-navy) !important;
-      }
-
-      .brand-block span {
-        color: #333333 !important;
-      }
-
-      .report-meta-card {
-        border: 1px solid #000 !important;
-        box-shadow: none !important;
-        padding: 10px !important;
-        margin: 12px 0 !important;
-      }
-
-      .container {
-        max-width: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-      }
-
-      .kpi-grid {
-        grid-template-columns: repeat(4, 1fr) !important;
-        gap: 8px !important;
-        margin-bottom: 16px !important;
-      }
-
-      .kpi-card {
-        box-shadow: none !important;
-        border: 1px solid #999999 !important;
-        padding: 8px !important;
-      }
-
-      .kpi-value {
-        font-size: 18px !important;
-      }
-
-      .charts-grid {
-        display: none !important;
-      }
-
-      .table-card {
-        box-shadow: none !important;
-        border: none !important;
-        padding: 0 !important;
-      }
-
-      table {
-        font-size: 11px !important;
-      }
-
-      th {
-        background: #EEEEEE !important;
-        color: #000000 !important;
-        border-bottom: 1px solid #000000 !important;
-      }
-
-      td {
-        border-bottom: 1px solid #CCCCCC !important;
-      }
-
-      .print-sig-col {
+      #printReportContainer {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
         display: block !important;
+        background: white;
+        color: black;
+      }
+      .no-print {
+        display: none !important;
       }
     }
 
-    .print-sig-col {
-      display: none;
+    /* Scrollbars refinadas */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
     }
   </style>
 </head>
-<body>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col antialiased selection:bg-uema-600 selection:text-white relative">
 
-  <!-- ========================================================================
-       TELA DE BLOQUEIO POR SENHA (SEM FORM NATIVO)
-       ======================================================================== -->
-  <div id="lock-screen">
-    <div class="lock-card">
-      <div class="lock-logo-badge">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-        </svg>
+  <!-- ======================================================== -->
+  <!-- TELA DE BLOQUEIO DE SEGURANÇA (SENHA ESTRITA: 465465)   -->
+  <!-- ======================================================== -->
+  <div id="lockScreen" class="fixed inset-0 z-50 bg-gradient-to-br from-uema-navy via-[#0d2854] to-slate-950 flex items-center justify-center p-4">
+    <div id="lockBox" class="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-3xl max-w-md w-full shadow-2xl text-center space-y-6 text-white relative">
+      
+      <div class="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-tr from-sky-500 to-sky-300 text-uema-navy flex items-center justify-center text-3xl shadow-lg shadow-sky-500/30">
+        <i class="fa-solid fa-lock"></i>
       </div>
-      <h2>Painel Valoriza</h2>
-      <p>Universidade Estadual do Maranhão<br>Digite a senha de segurança institucional</p>
 
-      <div class="pin-input-wrapper">
-        <input type="password" id="pin-input" class="pin-input" maxlength="6" placeholder="••••••" inputmode="numeric" autofocus autocomplete="off">
-        <button type="button" class="btn-toggle-eye" onclick="togglePasswordVisibility()" title="Exibir/Ocultar Senha">
-          <svg id="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-            <circle cx="12" cy="12" r="3"></circle>
-          </svg>
+      <div>
+        <h2 class="text-2xl font-black tracking-tight">UEMA <span class="text-sky-300 font-light">Valoriza</span></h2>
+        <p class="text-xs text-sky-200/80 mt-1">Acesso Restrito ao Painel Institucional de Frequência</p>
+      </div>
+
+      <div class="space-y-4">
+        <div class="text-left">
+          <label for="lockPasswordInput" class="block text-xs font-semibold text-sky-200 mb-1.5 uppercase tracking-wider">
+            Digite a Chave de Acesso:
+          </label>
+          <div class="relative">
+            <input 
+              type="password" 
+              id="lockPasswordInput" 
+              placeholder="Digite a senha institucional..."
+              autocomplete="current-password"
+              class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-slate-400 text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-sky-400 focus:bg-white/15 transition text-center font-mono font-bold"
+            >
+            <button type="button" id="btnTogglePasswordVisibility" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-sky-300/70 hover:text-white transition">
+              <i class="fa-regular fa-eye" id="togglePasswordIcon"></i>
+            </button>
+          </div>
+          <p id="lockErrorMsg" class="text-xs text-rose-300 font-medium mt-2 hidden flex items-center gap-1.5 justify-center">
+            <i class="fa-solid fa-circle-exclamation"></i> Chave incorreta! Digite a credencial correta.
+          </p>
+        </div>
+
+        <button 
+          id="btnUnlockSystem" 
+          class="w-full py-3 bg-gradient-to-r from-sky-500 to-sky-400 hover:from-sky-400 hover:to-sky-300 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-sky-500/20 active:scale-98 transition duration-150 flex items-center justify-center gap-2"
+        >
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>Autenticar & Acessar</span>
         </button>
       </div>
-      
-      <button type="button" id="btn-submit-pin" class="btn btn-primary" style="width:100%; justify-content:center; padding:12px;">Entrar no Painel</button>
-      <div id="lock-error-msg" class="lock-error"></div>
+
+      <div class="pt-2 border-t border-white/10 text-[11px] text-sky-300/60 font-mono">
+        Universidade Estadual do Maranhão • Núcleo de Auditoria Biométrica
+      </div>
     </div>
   </div>
 
-  <!-- ========================================================================
-       SISTEMA PRINCIPAL
-       ======================================================================== -->
-  <div id="app-root" style="display:none;">
-    <header>
-      <div class="brand-block">
-        <h1>Projeto Valoriza — Relatórios e Indicadores</h1>
-        <span>Universidade Estadual do Maranhão (UEMA) • Terminal de Frequência</span>
+  <!-- TOAST CONTAINER -->
+  <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- CABEÇALHO INSTITUCIONAL -->
+  <header class="bg-gradient-to-r from-uema-navy via-[#10356c] to-uema-800 text-white shadow-lg sticky top-0 z-30 border-b border-sky-900/50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      
+      <div class="flex items-center gap-3.5">
+        <div class="w-11 h-11 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-sky-300 text-xl font-bold shadow-inner">
+          <i class="fa-solid fa-fingerprint"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl font-extrabold tracking-tight">UEMA <span class="text-sky-300 font-light">Valoriza</span></h1>
+            <span class="bg-sky-500/20 text-sky-200 border border-sky-400/30 text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">v3.5 CRUD Pro</span>
+          </div>
+          <p class="text-xs text-sky-200/80">Gestão Forense de Frequência & Traços Biométricos</p>
+        </div>
       </div>
-      <div class="header-actions">
-        <button class="btn btn-success" onclick="exportConsolidatedJSON()">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-          Exportar JSON Consolidado
+
+      <!-- Barra de Ações do Topo -->
+      <div class="flex items-center gap-2 sm:gap-2.5 flex-wrap">
+        
+        <!-- CRUD: Botão Novo Registro -->
+        <button id="btnOpenCreateModal" class="inline-flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold px-3.5 py-2 rounded-xl transition duration-150 shadow-md active:scale-95" title="Cadastrar nova presença manualmente">
+          <i class="fa-solid fa-plus-circle text-sm"></i>
+          <span>Novo Lançamento</span>
         </button>
-        <button class="btn btn-outline" onclick="exportToPDF()">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-          Exportar PDF / Imprimir
+
+        <!-- Baixar Modelo Planilha XLSX -->
+        <button id="btnDownloadTemplate" class="inline-flex items-center gap-1.5 bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-400/40 text-emerald-200 hover:text-white text-xs font-semibold px-3 py-2 rounded-xl transition backdrop-blur-sm shadow-sm active:scale-95" title="Baixar modelo oficial em branco para preenchimento">
+          <i class="fa-solid fa-file-excel text-emerald-400"></i>
+          <span class="hidden sm:inline">Modelo Excel</span>
         </button>
-        <button class="btn btn-outline" style="background:rgba(217,130,43,0.25);" onclick="lockSystem()">
-          Bloquear
+
+        <!-- Importar Excel (.xlsx) -->
+        <label for="xlsxFileInput" class="cursor-pointer inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 border border-white/25 text-white text-xs font-semibold px-3 py-2 rounded-xl transition duration-150 backdrop-blur-sm shadow-sm active:scale-95" title="Carregar planilha Excel">
+          <i class="fa-solid fa-file-import text-sky-300"></i>
+          <span>Importar Excel</span>
+        </label>
+        <input type="file" id="xlsxFileInput" accept=".xlsx, .xls, .csv" class="hidden">
+
+        <!-- Importar JSON -->
+        <label for="jsonFileInput" class="cursor-pointer inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 border border-white/25 text-white text-xs font-semibold px-3 py-2 rounded-xl transition duration-150 backdrop-blur-sm shadow-sm active:scale-95" title="Carregar base de dados JSON">
+          <i class="fa-solid fa-code text-sky-300"></i>
+          <span>JSON</span>
+        </label>
+        <input type="file" id="jsonFileInput" accept=".json" class="hidden">
+
+        <!-- Exportar JSON -->
+        <button id="btnExportJSON" class="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 border border-white/25 text-white text-xs font-semibold px-3 py-2 rounded-xl transition duration-150 backdrop-blur-sm shadow-sm active:scale-95" title="Baixar base de dados completa em JSON">
+          <i class="fa-solid fa-download text-sky-300"></i>
+          <span class="hidden sm:inline">Exportar</span>
+        </button>
+
+        <!-- Emitir Relatório PDF -->
+        <button id="btnOpenReportModal" class="inline-flex items-center gap-2 bg-sky-500 hover:bg-sky-400 text-slate-900 font-bold text-xs px-3.5 py-2 rounded-xl shadow-md transition duration-150 transform hover:-translate-y-0.5 active:translate-y-0">
+          <i class="fa-solid fa-file-pdf"></i>
+          <span>Relatório</span>
+        </button>
+
+        <!-- Bloquear / Sair do Sistema -->
+        <button id="btnLockApp" class="inline-flex items-center gap-1.5 bg-rose-500/20 hover:bg-rose-500/40 border border-rose-400/40 text-rose-200 hover:text-white text-xs font-semibold px-2.5 py-2 rounded-xl transition shadow-sm" title="Bloquear painel agora">
+          <i class="fa-solid fa-lock"></i>
+          <span class="hidden md:inline">Bloquear</span>
         </button>
       </div>
-    </header>
 
-    <div class="container">
-      <!-- Metadados do Relatorio (Emissor & Data BR) -->
-      <div class="report-meta-card">
-        <div class="report-meta-info">
-          <div><b>Relatório Oficial de Frequência e Atendimento</b></div>
-          <div id="report-generation-time">Gerado em: --/--/---- às --:--:--</div>
-        </div>
-        <div class="report-issuer-input-group">
-          <label for="report-issuer-name">Responsável:</label>
-          <input type="text" id="report-issuer-name" placeholder="Nome de quem gerou o relatório..." oninput="updateIssuerDisplay()">
-        </div>
+    </div>
+  </header>
+
+  <!-- CONTEÚDO PRINCIPAL -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- ======================================================== -->
+    <!-- ESTADO VAZIO INSTITUCIONAL (DATABASE INICIAL VAZIA)     -->
+    <!-- ======================================================== -->
+    <div id="emptyStateContainer" class="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-8 sm:p-14 text-center space-y-6 max-w-3xl mx-auto my-8">
+      <div class="w-20 h-20 bg-sky-50 text-sky-600 rounded-3xl mx-auto flex items-center justify-center text-3xl shadow-inner border border-sky-100">
+        <i class="fa-solid fa-folder-open"></i>
+      </div>
+      <div class="space-y-2">
+        <h2 class="text-xl font-bold text-slate-900">Base de Frequência Vazia & Pronta para Operação</h2>
+        <p class="text-xs sm:text-sm text-slate-500 max-w-lg mx-auto">
+          O sistema UEMA Valoriza iniciou sem registros embutidos. Você pode cadastrar presenças pelo botão <b class="text-slate-700">Novo Lançamento</b> (com pad de desenho), importar planilhas Excel (<code class="text-sky-600 font-mono font-semibold">.xlsx</code>), arquivos JSON ou gerar rapidamente uma base de teste com 100 registros.
+        </p>
       </div>
 
-      <!-- Upload Múltiplo e Cumulativo -->
-      <div class="upload-card" id="drop-zone" onclick="document.getElementById('file-input').click()">
-        <input type="file" id="file-input" style="display:none;" accept=".json" multiple onchange="handleFileSelect(event)">
-        <div class="upload-icon">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-        </div>
-        <div class="upload-title">Clique ou arraste um ou vários arquivos JSON de frequências</div>
-        <div class="upload-subtitle">Os dados serão somados/acumulados e ordenados cronologicamente de forma automática</div>
+      <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
+        <button onclick="openCreateRecordModal()" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow-md">
+          <i class="fa-solid fa-pen-nib"></i>
+          <span>Cadastrar Novo Lançamento (Manual)</span>
+        </button>
+
+        <button onclick="document.getElementById('xlsxFileInput').click()" class="inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow-md">
+          <i class="fa-solid fa-file-excel"></i>
+          <span>Importar Planilha Excel (.xlsx)</span>
+        </button>
+
+        <button onclick="document.getElementById('btnDownloadTemplate').click()" class="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-xl transition">
+          <i class="fa-solid fa-download text-emerald-600"></i>
+          <span>Baixar Modelo Excel (.xlsx)</span>
+        </button>
+
+        <button onclick="generateRandomDatasetInBatch(100)" class="inline-flex items-center gap-2 bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 text-xs font-bold px-4 py-2.5 rounded-xl transition shadow-xs">
+          <i class="fa-solid fa-wand-magic-sparkles text-purple-600"></i>
+          <span>Gerar 100 Registros Aleatórios (Simulação)</span>
+        </button>
       </div>
 
-      <div class="upload-actions-bar">
-        <div class="files-badge" id="records-counter-badge">Base Consolidada: 0 registro(s)</div>
-        <div style="display:flex; gap:8px;">
-          <button class="btn btn-primary" onclick="openCreateModal()">+ Novo Registro</button>
-          <button class="btn btn-danger" onclick="clearAllData()">Limpar Registros</button>
-        </div>
+      <div class="pt-4 border-t border-slate-100 text-[11px] text-slate-400">
+        Colunas esperadas na planilha: <span class="font-mono font-semibold text-slate-600">id, nome, data_hora, largura, altura, rle_hex</span>
       </div>
+    </div>
 
-      <!-- Indicadores / KPIs -->
-      <div class="kpi-grid" style="margin-top:20px;">
-        <div class="kpi-card">
-          <div class="kpi-title">Total de Atendimentos</div>
-          <div class="kpi-value" id="kpi-total">0</div>
-          <div class="kpi-sub" id="kpi-total-sub">Nenhum dado importado</div>
-        </div>
-        <div class="kpi-card green">
-          <div class="kpi-title">Participantes Únicos</div>
-          <div class="kpi-value" id="kpi-unique">0</div>
-          <div class="kpi-sub">Indivíduos distintos atendidos</div>
-        </div>
-        <div class="kpi-card accent">
-          <div class="kpi-title">Pico de Atendimento</div>
-          <div class="kpi-value" id="kpi-peak">--:00</div>
-          <div class="kpi-sub" id="kpi-peak-sub">Faixa com maior frequência</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-title">Turno Predominante</div>
-          <div class="kpi-value" id="kpi-shift">--</div>
-          <div class="kpi-sub" id="kpi-shift-sub">Concentração diária</div>
-        </div>
-      </div>
+    <!-- ======================================================== -->
+    <!-- PAINEL DE DADOS ATIVO (EXIBIDO APÓS LANÇAMENTO/IMPORT)   -->
+    <!-- ======================================================== -->
+    <div id="dashboardDataContainer" class="hidden space-y-6">
 
-      <!-- Graficos -->
-      <div class="charts-grid">
-        <div class="chart-card">
-          <h3>Fluxo de Assinaturas por Horário</h3>
-          <div style="position: relative; height: 240px;">
-            <canvas id="chart-hours"></canvas>
+      <!-- CARDS DE MÉTRICAS PRINCIPAIS -->
+      <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <!-- Total de Registros -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all flex items-center justify-between">
+          <div>
+            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total de Lançamentos</span>
+            <div class="text-2xl font-black text-slate-800 mt-1" id="statTotalRegistros">0</div>
+            <span class="text-[11px] text-emerald-600 font-medium flex items-center gap-1 mt-1">
+              <i class="fa-solid fa-database"></i> Base Carregada
+            </span>
+          </div>
+          <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-clipboard-user"></i>
           </div>
         </div>
-        <div class="chart-card">
-          <h3>Distribuição por Turno</h3>
-          <div style="position: relative; height: 240px;">
-            <canvas id="chart-shifts"></canvas>
+
+        <!-- Participantes Únicos -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all flex items-center justify-between">
+          <div>
+            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Participantes Únicos</span>
+            <div class="text-2xl font-black text-slate-800 mt-1" id="statParticipantesUnicos">0</div>
+            <span class="text-[11px] text-slate-500 font-medium flex items-center gap-1 mt-1">
+              <i class="fa-solid fa-users"></i> Pessoas Cadastradas
+            </span>
+          </div>
+          <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-id-badge"></i>
           </div>
         </div>
-      </div>
 
-      <!-- Tabela CRUD -->
-      <div class="table-card">
-        <div class="table-header-bar">
-          <div class="table-title">Lista Completa de Presenças</div>
-          <input type="text" id="table-search" class="search-box" placeholder="Filtrar por nome ou data..." oninput="filterTable()">
+        <!-- HORÁRIO DE PICO (JANELA DESLIZANTE DE 60 MINUTOS) -->
+        <div class="bg-gradient-to-br from-amber-50 to-orange-50/50 p-5 rounded-2xl border border-amber-200/80 shadow-sm hover:shadow-md transition-all relative overflow-hidden">
+          <div class="absolute -right-3 -bottom-3 text-amber-200/40 text-7xl pointer-events-none">
+            <i class="fa-solid fa-fire"></i>
+          </div>
+          <div class="relative z-10">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-amber-800 uppercase tracking-wider flex items-center gap-1">
+                <i class="fa-solid fa-clock text-amber-600"></i> Pico Móvel (60 min)
+              </span>
+              <span class="bg-amber-200/70 text-amber-900 text-[10px] font-bold px-1.5 py-0.5 rounded">Maior Fluxo</span>
+            </div>
+            <div class="text-xl sm:text-2xl font-black text-amber-950 mt-1 tracking-tight" id="statHorarioPicoIntervalo">--:-- às --:--</div>
+            <div class="text-[11px] text-amber-800/90 font-medium mt-1" id="statHorarioPicoContagem">
+              0 presenças na janela
+            </div>
+          </div>
         </div>
 
-        <div class="table-wrapper">
-          <table id="attendees-table">
+        <!-- DETECTOR INTELIGENTE DE ANOMALIAS -->
+        <div class="bg-gradient-to-br from-rose-50 to-red-50/50 p-5 rounded-2xl border border-rose-200/80 shadow-sm hover:shadow-md transition-all relative overflow-hidden">
+          <div class="relative z-10 flex items-center justify-between">
+            <div>
+              <span class="text-xs font-bold text-rose-800 uppercase tracking-wider flex items-center gap-1">
+                <i class="fa-solid fa-shield-halved text-rose-600"></i> Auditoria de Duplicidade
+              </span>
+              <div class="text-2xl font-black text-rose-950 mt-1 flex items-baseline gap-2">
+                <span id="statAnomaliasCount">0</span>
+                <span class="text-xs font-normal text-rose-700 font-sans" id="statAnomaliasPercent">(0%)</span>
+              </div>
+              <div class="text-[11px] text-rose-800 font-medium mt-1 flex items-center gap-1">
+                <i class="fa-solid fa-triangle-exclamation"></i> Lançamento &lt; 60s
+              </div>
+            </div>
+            <button id="btnFilterOnlyAnomalies" title="Filtrar apenas duplicidades suspeitas na tabela" class="w-10 h-10 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700 flex items-center justify-center transition active:scale-90">
+              <i class="fa-solid fa-filter-circle-xmark"></i>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- PAINEL SUPERIOR DE RANQUEAMENTO (PODIUM / TOP 5) -->
+      <section class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center">
+              <i class="fa-solid fa-trophy"></i>
+            </div>
+            <div>
+              <h2 class="text-base font-bold text-slate-800">Ranking Geral de Assiduidade</h2>
+              <p class="text-xs text-slate-400">Participantes com mais presenças na base</p>
+            </div>
+          </div>
+          <span class="text-xs font-semibold text-slate-400" id="rankingResumoText">Top 5 Destaques</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3" id="topRankingContainer">
+          <!-- Renderizado dinamicamente via JS -->
+        </div>
+      </section>
+
+      <!-- SEÇÃO DE GRÁFICOS (ECHARTS) -->
+      <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Gráfico Donut -->
+        <div class="lg:col-span-5 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col">
+          <div class="flex items-center justify-between mb-2">
+            <div>
+              <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-chart-pie text-sky-600"></i> Proporção de Presenças
+              </h3>
+              <p class="text-xs text-slate-400">Percentual (%) no rótulo e valor absoluto no hover</p>
+            </div>
+            <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono font-bold">Donut Interativo</span>
+          </div>
+          <div class="w-full h-72" id="donutChart"></div>
+        </div>
+
+        <!-- Gráfico de Densidade Horária com Destaque do Pico -->
+        <div class="lg:col-span-7 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col">
+          <div class="flex items-center justify-between mb-2">
+            <div>
+              <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-chart-column text-sky-600"></i> Distribuição por Horário & Janela de Pico
+              </h3>
+              <p class="text-xs text-slate-400">Barras com percentual relativo e realce visual na faixa de maior densidade</p>
+            </div>
+            <span id="badgePicoGrafico" class="text-[10px] bg-amber-100 text-amber-800 border border-amber-300 px-2 py-0.5 rounded-md font-bold">Pico Detectado</span>
+          </div>
+          <div class="w-full h-72" id="barChart"></div>
+        </div>
+      </section>
+
+      <!-- PAINEL DA TABELA COM FILTROS, PAGINAÇÃO E CRUD -->
+      <section class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col">
+        
+        <!-- Barra de Filtros e Busca -->
+        <div class="p-4 sm:p-5 bg-slate-50/70 border-b border-slate-200/70 flex flex-wrap items-center justify-between gap-3">
+          
+          <div class="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
+            <!-- Input Busca por Nome ou ID -->
+            <div class="relative flex-1 min-w-[180px]">
+              <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+              <input type="text" id="filterSearch" placeholder="Buscar por participante ou ID..." class="w-full pl-9 pr-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
+            </div>
+
+            <!-- Filtro de Data Inicial -->
+            <div class="flex items-center gap-1.5 text-xs text-slate-600">
+              <span class="font-medium text-[11px] text-slate-400">De:</span>
+              <input type="date" id="filterDateStart" class="bg-white border border-slate-200 px-2.5 py-1.5 text-xs rounded-xl focus:ring-2 focus:ring-sky-500 focus:outline-none">
+            </div>
+
+            <!-- Filtro de Data Final -->
+            <div class="flex items-center gap-1.5 text-xs text-slate-600">
+              <span class="font-medium text-[11px] text-slate-400">Até:</span>
+              <input type="date" id="filterDateEnd" class="bg-white border border-slate-200 px-2.5 py-1.5 text-xs rounded-xl focus:ring-2 focus:ring-sky-500 focus:outline-none">
+            </div>
+
+            <!-- Filtro de Status de Auditoria -->
+            <select id="filterStatus" class="bg-white border border-slate-200 text-xs rounded-xl px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500">
+              <option value="all">Todos os Registros</option>
+              <option value="anomalies">Apenas Duplicidades (&lt;60s)</option>
+              <option value="regular">Apenas Regulares (Válidos)</option>
+            </select>
+
+            <!-- Reset Filtros -->
+            <button id="btnResetFilters" title="Limpar todos os filtros" class="px-3 py-2 text-xs text-slate-500 hover:text-slate-800 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 transition flex items-center gap-1.5">
+              <i class="fa-solid fa-rotate-left"></i>
+              <span>Limpar</span>
+            </button>
+          </div>
+
+          <!-- Ações Rápidas da Tabela -->
+          <div class="flex items-center gap-3">
+            <button onclick="openCreateRecordModal()" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-xl shadow-xs transition flex items-center gap-1.5">
+              <i class="fa-solid fa-plus"></i>
+              <span>Adicionar</span>
+            </button>
+
+            <!-- Seletor de Itens por Página -->
+            <div class="flex items-center gap-1.5 text-xs text-slate-600">
+              <span class="font-medium">Exibir:</span>
+              <select id="pageSizeSelect" class="bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-sky-500">
+                <option value="10">10 por pág</option>
+                <option value="25" selected>25 por pág</option>
+                <option value="50">50 por pág</option>
+                <option value="100">100 por pág</option>
+                <option value="all">Todos</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabela Responsiva com Cabeçalhos Ordenáveis -->
+        <div class="overflow-x-auto w-full">
+          <table class="w-full text-left border-collapse text-xs">
             <thead>
-              <tr>
-                <th style="width:50px;">#</th>
-                <th>Nome Completo</th>
-                <th>Data e Hora (BR)</th>
-                <th>Turno</th>
-                <th style="text-align:center; width:120px;">Ações</th>
-                <th class="print-sig-col">Comprovante Impresso</th>
+              <tr class="bg-slate-100/90 text-slate-600 uppercase text-[10px] font-bold tracking-wider select-none border-b border-slate-200">
+                <th scope="col" class="py-3 px-4 cursor-pointer hover:bg-slate-200/80 transition" onclick="toggleSort('id')">
+                  <div class="flex items-center gap-1.5">
+                    <span>ID</span>
+                    <i class="fa-solid fa-sort text-slate-400" id="sortIcon_id"></i>
+                  </div>
+                </th>
+                <th scope="col" class="py-3 px-4 cursor-pointer hover:bg-slate-200/80 transition" onclick="toggleSort('nome')">
+                  <div class="flex items-center gap-1.5">
+                    <span>Participante</span>
+                    <i class="fa-solid fa-sort text-slate-400" id="sortIcon_nome"></i>
+                  </div>
+                </th>
+                <th scope="col" class="py-3 px-4 cursor-pointer hover:bg-slate-200/80 transition" onclick="toggleSort('data_hora')">
+                  <div class="flex items-center gap-1.5">
+                    <span>Data & Horário</span>
+                    <i class="fa-solid fa-sort text-slate-400" id="sortIcon_data_hora"></i>
+                  </div>
+                </th>
+                <th scope="col" class="py-3 px-4 text-center">
+                  <span>Traço Biométrico (128x48)</span>
+                </th>
+                <th scope="col" class="py-3 px-4 cursor-pointer hover:bg-slate-200/80 transition" onclick="toggleSort('status')">
+                  <div class="flex items-center gap-1.5">
+                    <span>Auditoria</span>
+                    <i class="fa-solid fa-sort text-slate-400" id="sortIcon_status"></i>
+                  </div>
+                </th>
+                <th scope="col" class="py-3 px-4 text-right">Ações (CRUD)</th>
               </tr>
             </thead>
-            <tbody id="table-body">
-              <tr>
-                <td colspan="5" style="text-align:center; color:var(--text-muted); padding:30px;">
-                  Nenhum registro carregado. Importe um arquivo JSON ou cadastre um novo registro acima.
-                </td>
-              </tr>
+            <tbody id="tableBody" class="divide-y divide-slate-100 text-slate-700 font-medium">
+              <!-- Renderizado via JavaScript -->
             </tbody>
           </table>
         </div>
+
+        <!-- Paginação -->
+        <div class="p-4 bg-slate-50/70 border-t border-slate-200/70 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-600">
+          <div id="paginationInfo">Mostrando 0 de 0 registros</div>
+          <div class="flex items-center gap-1.5" id="paginationControls">
+            <!-- Botões de página construídos via JS -->
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- RODAPÉ INSTITUCIONAL -->
+  <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500 mt-10">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <div class="flex items-center gap-2 font-medium">
+        <span>Universidade Estadual do Maranhão - UEMA</span>
+        <span class="text-slate-300">•</span>
+        <span class="text-slate-400">Núcleo de Gestão de Frequência & Auditoria Biométrica</span>
+      </div>
+      <div class="text-[11px] text-slate-400">
+        Motor RLE 128x48 Monocromático & Auditoria Algorítmica
+      </div>
+    </div>
+  </footer>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: CRUD - CRIAR / EDITAR REGISTRO COM DESENHO       -->
+  <!-- ======================================================== -->
+  <div id="modalRecordForm" class="fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden transform transition-all">
+      
+      <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-uema-navy to-uema-800 text-white">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-lg text-sky-300">
+            <i class="fa-solid fa-pen-nib" id="formModalIcon"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-base" id="formModalTitle">Novo Lançamento de Frequência</h3>
+            <p class="text-xs text-sky-200/80">Preencha os dados e desenhe a assinatura</p>
+          </div>
+        </div>
+        <button onclick="closeRecordFormModal()" class="w-8 h-8 rounded-full text-white/70 hover:text-white hover:bg-white/10 flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="recordForm" class="p-6 space-y-4 text-xs text-slate-700">
+        <input type="hidden" id="formRecordId">
+
+        <!-- Campo Nome -->
+        <div>
+          <label for="formNome" class="block font-bold text-slate-800 text-xs mb-1">Nome do Participante *</label>
+          <input type="text" id="formNome" required placeholder="Ex: Maria Silva, Philipe..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-medium focus:ring-2 focus:ring-sky-500 focus:outline-none transition">
+        </div>
+
+        <!-- Campo Data & Hora -->
+        <div>
+          <label for="formDataHora" class="block font-bold text-slate-800 text-xs mb-1">Data e Horário *</label>
+          <input type="datetime-local" id="formDataHora" step="1" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-mono font-medium focus:ring-2 focus:ring-sky-500 focus:outline-none transition">
+        </div>
+
+        <!-- Pad Interativo de Assinatura (Mesa Digitalizadora 128x48) -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block font-bold text-slate-800 text-xs">Assinatura / Traço (Desenhe com mouse ou toque):</label>
+            <div class="flex items-center gap-2">
+              <button type="button" id="btnRandomSignatureForm" class="text-[11px] text-purple-600 hover:text-purple-800 font-semibold flex items-center gap-1">
+                <i class="fa-solid fa-shuffle"></i> Aleatório
+              </button>
+              <button type="button" id="btnClearPadForm" class="text-[11px] text-rose-600 hover:text-rose-800 font-semibold flex items-center gap-1">
+                <i class="fa-solid fa-eraser"></i> Limpar
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-slate-900 p-2.5 rounded-2xl border border-slate-800 flex flex-col items-center justify-center shadow-inner">
+            <canvas id="signaturePadCanvas" width="384" height="144" class="w-full h-28 bg-slate-950 rounded-xl border border-slate-700 cursor-crosshair touch-none"></canvas>
+            <span class="text-[10px] text-slate-400 mt-1 font-mono">Resolução Nativa Matriz: 128 x 48 px (Codificação RLE Hex)</span>
+          </div>
+        </div>
+
+        <!-- Modal Footer Buttons -->
+        <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
+          <button type="button" onclick="closeRecordFormModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-xl transition">
+            Cancelar
+          </button>
+          <button type="submit" class="px-5 py-2 text-xs font-bold bg-uema-navy hover:bg-uema-800 text-white rounded-xl shadow transition flex items-center gap-2">
+            <i class="fa-solid fa-floppy-disk"></i>
+            <span id="formSubmitBtnText">Salvar Lançamento</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: CONFIRMAÇÃO DE EXCLUSÃO (SEM ALERT/CONFIRM)      -->
+  <!-- ======================================================== -->
+  <div id="modalDeleteConfirm" class="fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full shadow-2xl border border-slate-200 overflow-hidden p-6 text-center space-y-4">
+      <div class="w-14 h-14 bg-rose-100 text-rose-600 rounded-2xl mx-auto flex items-center justify-center text-2xl">
+        <i class="fa-solid fa-trash-can"></i>
+      </div>
+      <div>
+        <h3 class="text-base font-bold text-slate-900">Excluir Lançamento?</h3>
+        <p class="text-xs text-slate-500 mt-1">
+          Tem certeza de que deseja remover permanentemente o registro <b id="deleteRecordNameBadge" class="text-slate-800">#0</b> da base institucional?
+        </p>
+      </div>
+      <div class="flex items-center justify-center gap-2.5 pt-2">
+        <button onclick="closeDeleteModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition">
+          Cancelar
+        </button>
+        <button id="btnConfirmDeleteAction" class="px-5 py-2 text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white rounded-xl shadow-md transition flex items-center gap-1.5">
+          <i class="fa-solid fa-trash"></i>
+          <span>Confirmar Exclusão</span>
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: VISUALIZADOR DE ASSINATURA -->
-  <div class="modal-overlay" id="sig-modal">
-    <div class="modal-box">
-      <div class="modal-header">
-        <h3 id="modal-title">Assinatura Digital</h3>
-        <button class="modal-close-btn" onclick="closeModal('sig-modal')">&times;</button>
+  <!-- ======================================================== -->
+  <!-- MODAL: INSPEÇÃO FORENSE DE ASSINATURA EM ALTA RESOLUÇÃO -->
+  <!-- ======================================================== -->
+  <div id="modalInspection" class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden transform transition-all">
+      <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-magnifying-glass-plus"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-900 text-base" id="modalInspNome">Nome</h3>
+            <p class="text-xs text-slate-500" id="modalInspDataHora">00/00/0000 00:00:00</p>
+          </div>
+        </div>
+        <button onclick="closeInspectionModal()" class="w-8 h-8 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-200 flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
-      <div class="modal-body" style="text-align:center;">
-        <div class="signature-canvas-container">
-          <canvas id="modal-canvas" width="320" height="120"></canvas>
+
+      <div class="p-6 space-y-4">
+        <!-- Canvas com Zoom 4x em Alta Resolução -->
+        <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-col items-center justify-center relative overflow-hidden">
+          <span class="text-[10px] text-slate-400 font-mono mb-2 flex items-center gap-1">
+            <i class="fa-solid fa-expand"></i> Ampliação Óptica 400% (Matriz 128 x 48 px)
+          </span>
+          <div class="p-2 bg-slate-900 rounded-xl border border-slate-700 shadow-inner">
+            <canvas id="modalCanvas" width="128" height="48" class="w-[384px] h-[144px] pixelated rounded bg-slate-900"></canvas>
+          </div>
+          <div class="mt-3 flex items-center gap-2">
+            <button id="btnToggleInvertCanvas" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 transition flex items-center gap-1.5">
+              <i class="fa-solid fa-circle-half-stroke"></i> Inverter Cores
+            </button>
+            <button id="btnDownloadSignature" class="text-xs bg-sky-600 hover:bg-sky-500 text-white px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
+              <i class="fa-solid fa-download"></i> Baixar PNG
+            </button>
+          </div>
         </div>
-        <div class="modal-meta" id="modal-meta"></div>
-        <div class="modal-actions">
-          <button class="btn btn-primary" style="flex:1;" onclick="downloadCurrentSignature()">Baixar Imagem PNG</button>
-          <button class="btn btn-warning" style="background:#5A6A78;" onclick="closeModal('sig-modal')">Fechar</button>
+
+        <!-- Código RLE Hex -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-slate-500 font-medium">String Bruta RLE Hex:</span>
+            <button id="btnCopyRLE" class="text-sky-600 hover:text-sky-700 font-semibold flex items-center gap-1">
+              <i class="fa-regular fa-copy"></i> Copiar Código Hex
+            </button>
+          </div>
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 max-h-24 overflow-y-auto font-mono text-[11px] text-slate-700 break-all select-all leading-relaxed" id="modalInspRleText">
+            ---
+          </div>
         </div>
+
+        <div class="grid grid-cols-2 gap-3 text-xs bg-slate-50 p-3 rounded-xl border border-slate-100">
+          <div>
+            <span class="text-slate-400 block text-[10px] uppercase font-bold">Resolução Nativa</span>
+            <span class="font-semibold text-slate-700">128 × 48 px (Monocromático)</span>
+          </div>
+          <div>
+            <span class="text-slate-400 block text-[10px] uppercase font-bold">Diagnóstico</span>
+            <span id="modalInspStatusBadge" class="font-semibold">Normal</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4 bg-slate-50 border-t border-slate-100 text-right">
+        <button onclick="closeInspectionModal()" class="px-5 py-2 text-xs font-bold bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl transition">
+          Fechar
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: NOVO REGISTRO (CREATE) -->
-  <div class="modal-overlay" id="create-modal">
-    <div class="modal-box">
-      <div class="modal-header">
-        <h3>Adicionar Presença Manual</h3>
-        <button class="modal-close-btn" onclick="closeModal('create-modal')">&times;</button>
+  <!-- ======================================================== -->
+  <!-- MODAL: CONFIGURAÇÃO DE EMISSÃO DE RELATÓRIO OFICIAL     -->
+  <!-- ======================================================== -->
+  <div id="modalReportConfig" class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden transform transition-all">
+      <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-uema-navy to-uema-800 text-white">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-lg text-sky-300">
+            <i class="fa-solid fa-file-invoice"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-base">Gerador de Relatório Oficial</h3>
+            <p class="text-xs text-sky-200/80">Parametrização para Impressão e PDF</p>
+          </div>
+        </div>
+        <button onclick="closeReportModal()" class="w-8 h-8 rounded-full text-white/70 hover:text-white hover:bg-white/10 flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
-      <div class="modal-body">
-        <div class="modal-form-group">
-          <label for="create-name">Nome do Usuário:</label>
-          <input type="text" id="create-name" placeholder="Ex: Maria Silva">
+
+      <div class="p-6 space-y-5 text-xs text-slate-700">
+        
+        <div>
+          <label class="block font-bold text-slate-800 text-xs mb-2">Intervalo de Datas para o Relatório:</label>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <span class="block text-[11px] text-slate-400 mb-1">Data Inicial:</span>
+              <input type="date" id="reportStartDate" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none">
+            </div>
+            <div>
+              <span class="block text-[11px] text-slate-400 mb-1">Data Final:</span>
+              <input type="date" id="reportEndDate" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none">
+            </div>
+          </div>
         </div>
-        <div class="modal-form-group">
-          <label for="create-datetime">Data e Hora:</label>
-          <input type="datetime-local" id="create-datetime">
+
+        <div class="space-y-3 pt-2 border-t border-slate-100">
+          <span class="block font-bold text-slate-800 text-xs">Parâmetros do Documento:</span>
+          
+          <label class="flex items-center justify-between p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition">
+            <div class="pr-2">
+              <span class="font-semibold text-slate-800 block">Exibir Assinaturas / Traços Biométricos</span>
+              <span class="text-[11px] text-slate-400 block">Renderiza os desenhos nos registros ou mantém tabela compacta</span>
+            </div>
+            <input type="checkbox" id="reportIncludeSignatures" checked class="w-4 h-4 text-sky-600 rounded focus:ring-sky-500">
+          </label>
+
+          <label class="flex items-center justify-between p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition">
+            <div class="pr-2">
+              <span class="font-semibold text-slate-800 block">Ignorar Duplicidades Suspeitas (&lt;60s)</span>
+              <span class="text-[11px] text-slate-400 block">Filtra automaticamente lançamentos duplicados no relatório</span>
+            </div>
+            <input type="checkbox" id="reportExcludeAnomalies" class="w-4 h-4 text-sky-600 rounded focus:ring-sky-500">
+          </label>
+
+          <label class="flex items-center justify-between p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition">
+            <div class="pr-2">
+              <span class="font-semibold text-slate-800 block">Sumário Executivo e Horário de Pico</span>
+              <span class="text-[11px] text-slate-400 block">Adiciona cabeçalho com análise de pico (60 min) e estatísticas</span>
+            </div>
+            <input type="checkbox" id="reportIncludeSummary" checked class="w-4 h-4 text-sky-600 rounded focus:ring-sky-500">
+          </label>
         </div>
-        <div class="modal-actions">
-          <button class="btn btn-success" style="flex:1;" onclick="saveNewRecord()">Salvar Registro</button>
-          <button class="btn btn-warning" style="background:#5A6A78;" onclick="closeModal('create-modal')">Cancelar</button>
+
+        <div class="bg-blue-50/70 border border-blue-200/80 rounded-xl p-3 flex items-center justify-between text-blue-900">
+          <span class="font-medium text-xs">Registros a serem incluídos:</span>
+          <span id="reportPreviewRecordCount" class="font-bold text-sm">-- registros</span>
         </div>
+      </div>
+
+      <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
+        <button onclick="closeReportModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-xl transition">
+          Cancelar
+        </button>
+        <button id="btnGenerateReportPrint" class="px-5 py-2 text-xs font-bold bg-uema-navy hover:bg-uema-800 text-white rounded-xl shadow transition flex items-center gap-2">
+          <i class="fa-solid fa-print"></i>
+          <span>Gerar e Imprimir / Salvar PDF</span>
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: EDITAR REGISTRO (UPDATE) -->
-  <div class="modal-overlay" id="edit-modal">
-    <div class="modal-box">
-      <div class="modal-header">
-        <h3>Editar Presença</h3>
-        <button class="modal-close-btn" onclick="closeModal('edit-modal')">&times;</button>
-      </div>
-      <div class="modal-body">
-        <input type="hidden" id="edit-record-id">
-        <div class="modal-form-group">
-          <label for="edit-name">Nome Completo:</label>
-          <input type="text" id="edit-name">
-        </div>
-        <div class="modal-form-group">
-          <label for="edit-datetime">Data e Hora:</label>
-          <input type="datetime-local" id="edit-datetime">
-        </div>
-        <div class="modal-actions">
-          <button class="btn btn-success" style="flex:1;" onclick="saveEditedRecord()">Atualizar Registro</button>
-          <button class="btn btn-warning" style="background:#5A6A78;" onclick="closeModal('edit-modal')">Cancelar</button>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- CONTAINER DE IMPRESSÃO (PDF NATIVO) -->
+  <div id="printReportContainer" class="hidden p-8 max-w-5xl mx-auto font-sans"></div>
 
+  <!-- ======================================================== -->
+  <!-- JAVASCRIPT: MOTOR, CRUD, AUDITORIA, PAD E ALGORITMOS     -->
+  <!-- ======================================================== -->
   <script>
-    // ========================================================================
-    // AUTENTICACAO (SENHA: 465465)
-    // ========================================================================
-    const AUTH_PIN = "465465";
-    const pinInput = document.getElementById('pin-input');
-    const submitBtn = document.getElementById('btn-submit-pin');
-    const errorMsg = document.getElementById('lock-error-msg');
+    // --- CHAVE DE SEGURANÇA ESTRITA (465465) ---
+    const SYSTEM_ACCESS_KEY = "465465";
 
-    function checkPassword() {
-      const entered = pinInput.value.trim();
-      if (entered === AUTH_PIN) {
-        errorMsg.innerText = "";
-        try { sessionStorage.setItem('uema_valoriza_auth', 'true'); } catch(e) {}
-        unlockApp();
-      } else {
-        if (entered.length >= 6) {
-          errorMsg.innerText = "Senha incorreta. Tente novamente.";
-          pinInput.value = "";
-          pinInput.focus();
-        }
-      }
+    // --- BASE DE DADOS LIMPA (ZERO DADOS EMBUTIDOS) ---
+    let database = [];
+    let anomalyMap = new Map(); // id -> { isAnomaly: boolean, reason: string, secondsDiff: number }
+    let sortColumn = 'data_hora';
+    let sortDirection = 'desc';
+    let currentPage = 1;
+    let pageSize = 25;
+    let filteredRecords = [];
+
+    // Instâncias ECharts
+    let donutChartInstance = null;
+    let barChartInstance = null;
+
+    // Estado Modal Inspeção
+    let currentInspectedRecord = null;
+    let isInverted = false;
+
+    // Estado Modal Exclusão
+    let pendingDeleteId = null;
+
+    // Estado do Signature Pad Interativo (128x48)
+    let isDrawing = false;
+    let padCanvas, padCtx;
+
+    // --- SISTEMA DE TOASTS SEGUROS (SEM ALERT) ---
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      
+      const icons = {
+        success: 'fa-circle-check text-emerald-500',
+        error: 'fa-circle-exclamation text-rose-500',
+        warning: 'fa-triangle-exclamation text-amber-500',
+        info: 'fa-circle-info text-sky-500'
+      };
+
+      toast.className = `pointer-events-auto flex items-center gap-3 bg-white/95 backdrop-blur-md border border-slate-200/80 shadow-xl rounded-2xl px-4 py-3 text-xs font-semibold text-slate-800 transition-all duration-300 transform translate-y-2 opacity-0`;
+      toast.innerHTML = `
+        <i class="fa-solid ${icons[type] || icons.info} text-base"></i>
+        <span>${message}</span>
+      `;
+
+      container.appendChild(toast);
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', '-translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
     }
 
-    submitBtn.addEventListener('click', checkPassword);
-    pinInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); checkPassword(); }
-    });
-    pinInput.addEventListener('input', () => {
-      if (pinInput.value.trim().length === 6) checkPassword();
-    });
+    // --- GERENCIADOR DA TELA DE BLOQUEIO (SENHA: 465465) ---
+    function setupSecurityLock() {
+      const lockScreen = document.getElementById('lockScreen');
+      const lockBox = document.getElementById('lockBox');
+      const passwordInput = document.getElementById('lockPasswordInput');
+      const errorMsg = document.getElementById('lockErrorMsg');
+      const unlockBtn = document.getElementById('btnUnlockSystem');
+      const toggleVisBtn = document.getElementById('btnTogglePasswordVisibility');
+      const toggleVisIcon = document.getElementById('togglePasswordIcon');
+      const lockAppBtn = document.getElementById('btnLockApp');
 
-    function togglePasswordVisibility() {
-      pinInput.type = (pinInput.type === 'password') ? 'text' : 'password';
-    }
-
-    function unlockApp() {
-      document.getElementById('lock-screen').style.display = 'none';
-      document.getElementById('app-root').style.display = 'block';
-      updateReportGenerationTimestamp();
-      initCharts();
-    }
-
-    function lockSystem() {
-      try { sessionStorage.removeItem('uema_valoriza_auth'); } catch(e) {}
-      document.getElementById('app-root').style.display = 'none';
-      document.getElementById('lock-screen').style.display = 'flex';
-      pinInput.value = "";
-      errorMsg.innerText = "";
-    }
-
-    window.addEventListener('load', () => {
-      try {
-        if (sessionStorage.getItem('uema_valoriza_auth') === 'true') {
-          unlockApp();
-        }
-      } catch(e) {}
-    });
-
-    // ========================================================================
-    // FORMATACAO DE DATAS BR (DD/MM/AAAA HH:MM:SS) & METADADOS
-    // ========================================================================
-    function parseDate(dateStr) {
-      if (!dateStr) return new Date();
-      const iso = dateStr.replace(' ', 'T');
-      const d = new Date(iso);
-      return isNaN(d.getTime()) ? new Date() : d;
-    }
-
-    function formatDateBR(dateStr) {
-      const d = parseDate(dateStr);
-      const pad = (n) => String(n).padStart(2, '0');
-      return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-    }
-
-    function updateReportGenerationTimestamp() {
-      const now = new Date();
-      const pad = (n) => String(n).padStart(2, '0');
-      const strBR = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} às ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-      const issuer = document.getElementById('report-issuer-name').value.trim() || 'Não informado';
-      document.getElementById('report-generation-time').innerText = `Relatório gerado em: ${strBR} • Responsável: ${issuer}`;
-    }
-
-    function updateIssuerDisplay() {
-      updateReportGenerationTimestamp();
-    }
-
-    // ========================================================================
-    // DECODIFICADOR RLE HEX (128x48 BITS)
-    // ========================================================================
-    function decodeRLEToImageData(rleHex, width = 128, height = 48) {
-      if (!rleHex) return new ImageData(width, height);
-      const cleanHex = rleHex.trim();
-      const rawBytes = [];
-      for (let i = 0; i < cleanHex.length; i += 2) {
-        rawBytes.push(parseInt(cleanHex.substr(i, 2), 16));
-      }
-
-      const decompressed = [];
-      for (let i = 0; i < rawBytes.length; i += 2) {
-        const count = rawBytes[i];
-        const val = rawBytes[i + 1] !== undefined ? rawBytes[i + 1] : 0;
-        for (let c = 0; c < count; c++) {
-          decompressed.push(val);
+      function attemptUnlock() {
+        const entered = passwordInput.value.trim();
+        if (entered === SYSTEM_ACCESS_KEY) {
+          errorMsg.classList.add('hidden');
+          lockScreen.classList.add('transition-opacity', 'duration-300', 'opacity-0');
+          setTimeout(() => {
+            lockScreen.classList.add('hidden');
+            lockScreen.classList.remove('opacity-0');
+            passwordInput.value = '';
+            showToast('Acesso concedido com sucesso ao painel UEMA Valoriza!', 'success');
+          }, 300);
+        } else {
+          errorMsg.classList.remove('hidden');
+          lockBox.classList.remove('shake-anim');
+          void lockBox.offsetWidth; // Reflow CSS
+          lockBox.classList.add('shake-anim');
+          passwordInput.select();
         }
       }
 
-      const imgData = new ImageData(width, height);
-      for (let y = 0; y < height; y++) {
-        const page = Math.floor(y / 8);
-        const bit = y % 8;
-        for (let x = 0; x < width; x++) {
-          const byteIdx = x + page * width;
-          const byteVal = decompressed[byteIdx] || 0;
-          const isPixelSet = (byteVal & (1 << bit)) !== 0;
-          const pxIdx = (y * width + x) * 4;
+      unlockBtn.addEventListener('click', attemptUnlock);
+      passwordInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') attemptUnlock();
+      });
 
-          if (isPixelSet) {
-            imgData.data[pxIdx] = 0;
-            imgData.data[pxIdx + 1] = 43;
-            imgData.data[pxIdx + 2] = 73;
-            imgData.data[pxIdx + 3] = 255;
-          } else {
-            imgData.data[pxIdx] = 255;
-            imgData.data[pxIdx + 1] = 255;
-            imgData.data[pxIdx + 2] = 255;
-            imgData.data[pxIdx + 3] = 0;
-          }
-        }
-      }
-      return imgData;
-    }
-
-    function renderSignatureOnCanvas(rleHex, canvasElement, destWidth, destHeight) {
-      const offscreen = document.createElement('canvas');
-      offscreen.width = 128;
-      offscreen.height = 48;
-      const offCtx = offscreen.getContext('2d');
-      const imgData = decodeRLEToImageData(rleHex, 128, 48);
-      offCtx.putImageData(imgData, 0, 0);
-
-      canvasElement.width = destWidth;
-      canvasElement.height = destHeight;
-      const ctx = canvasElement.getContext('2d');
-      ctx.clearRect(0, 0, destWidth, destHeight);
-      ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(offscreen, 0, 0, destWidth, destHeight);
-    }
-
-    // ========================================================================
-    // BANCO DE DADOS EM MEMORIA & CONSOLIDACAO CRONOLOGICA
-    // ========================================================================
-    let allRecords = [];
-    let currentSelectedRecord = null;
-
-    function addRecordsCumulatively(newItems) {
-      if (!Array.isArray(newItems)) return;
-
-      newItems.forEach(item => {
-        // Evita duplicidade estrita
-        const exists = allRecords.some(r => 
-          r.nome === item.nome && 
-          r.data_hora === item.data_hora &&
-          r.rle_hex === item.rle_hex
-        );
-        if (!exists) {
-          allRecords.push({
-            id: item.id || (allRecords.length + 1),
-            nome: item.nome || 'USUARIO',
-            data_hora: item.data_hora || new Date().toISOString().replace('T', ' ').substring(0, 19),
-            largura: item.largura || 128,
-            altura: item.altura || 48,
-            rle_hex: item.rle_hex || ''
-          });
+      toggleVisBtn.addEventListener('click', () => {
+        if (passwordInput.type === 'password') {
+          passwordInput.type = 'text';
+          toggleVisIcon.className = 'fa-regular fa-eye-slash';
+        } else {
+          passwordInput.type = 'password';
+          toggleVisIcon.className = 'fa-regular fa-eye';
         }
       });
 
-      // Ordenacao cronologica estrita
-      sortRecordsChronologically();
-      updateDashboard();
+      lockAppBtn.addEventListener('click', () => {
+        lockScreen.classList.remove('hidden');
+        passwordInput.value = '';
+        errorMsg.classList.add('hidden');
+        passwordInput.focus();
+        showToast('Painel bloqueado.', 'info');
+      });
+
+      setTimeout(() => passwordInput.focus(), 200);
     }
 
-    function sortRecordsChronologically() {
-      allRecords.sort((a, b) => parseDate(a.data_hora) - parseDate(b.data_hora));
-      // Reatribui IDs ordenados para manter coerencia visual
-      allRecords.forEach((r, idx) => { r.id = idx + 1; });
+    // --- DECODIFICADOR RLE HEX -> CANVAS (128x48) ---
+    function renderRleToCanvas(rleHex, targetCanvas, invert = false) {
+      if (!targetCanvas || !rleHex) return;
+      const width = 128;
+      const height = 48;
+      targetCanvas.width = width;
+      targetCanvas.height = height;
+      const ctx = targetCanvas.getContext('2d');
+
+      const bytes = [];
+      const cleanHex = String(rleHex).trim().toUpperCase();
+      for (let i = 0; i < cleanHex.length; i += 4) {
+        const count = parseInt(cleanHex.substr(i, 2), 16);
+        const val = parseInt(cleanHex.substr(i + 2, 2), 16);
+        if (isNaN(count) || isNaN(val)) continue;
+        for (let c = 0; c < count; c++) {
+          bytes.push(val);
+        }
+      }
+
+      const imgData = ctx.createImageData(width, height);
+      const data = imgData.data;
+      let byteIndex = 0;
+      let bitIndex = 7;
+
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const b = bytes[byteIndex] || 0;
+          const bit = (b >> bitIndex) & 1;
+          const pixelIndex = (y * width + x) * 4;
+
+          if (invert) {
+            if (bit === 1) {
+              data[pixelIndex] = 56;
+              data[pixelIndex + 1] = 189;
+              data[pixelIndex + 2] = 248; // Sky blue
+              data[pixelIndex + 3] = 255;
+            } else {
+              data[pixelIndex] = 15;
+              data[pixelIndex + 1] = 23;
+              data[pixelIndex + 2] = 42;
+              data[pixelIndex + 3] = 255;
+            }
+          } else {
+            if (bit === 1) {
+              data[pixelIndex] = 15;
+              data[pixelIndex + 1] = 23;
+              data[pixelIndex + 2] = 42;
+              data[pixelIndex + 3] = 255;
+            } else {
+              data[pixelIndex] = 248;
+              data[pixelIndex + 1] = 250;
+              data[pixelIndex + 2] = 252;
+              data[pixelIndex + 3] = 255;
+            }
+          }
+
+          bitIndex--;
+          if (bitIndex < 0) {
+            bitIndex = 7;
+            byteIndex++;
+          }
+        }
+      }
+      ctx.putImageData(imgData, 0, 0);
     }
 
-    function handleFileSelect(evt) {
-      const files = evt.target.files;
-      if (!files || files.length === 0) return;
+    // --- CODIFICADOR CANVAS -> RLE HEXADECIMAL (128x48) ---
+    function convertPadCanvasToRleHex(sourceCanvas) {
+      // Cria canvas temporário 128x48
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = 128;
+      tempCanvas.height = 48;
+      const tCtx = tempCanvas.getContext('2d');
+      
+      // Desenha redimensionado
+      tCtx.drawImage(sourceCanvas, 0, 0, 128, 48);
+      const imgData = tCtx.getImageData(0, 0, 128, 48);
+      const data = imgData.data;
 
-      Array.from(files).forEach(file => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          try {
-            const json = JSON.parse(e.target.result);
-            addRecordsCumulatively(json);
-          } catch (err) {
-            alert("Erro ao ler " + file.name + ": Formato JSON inválido.");
+      const bytes = [];
+      let currentByte = 0;
+      let bitIndex = 7;
+
+      for (let i = 0; i < 128 * 48; i++) {
+        const r = data[i * 4];
+        const g = data[i * 4 + 1];
+        const b = data[i * 4 + 2];
+        const a = data[i * 4 + 3];
+
+        // Se houver traço com alfa ou cor clara desenhada na tela escura
+        const isInk = (a > 50 && (r > 60 || g > 60 || b > 60)) ? 1 : 0;
+        if (isInk) {
+          currentByte |= (1 << bitIndex);
+        }
+
+        bitIndex--;
+        if (bitIndex < 0) {
+          bytes.push(currentByte);
+          currentByte = 0;
+          bitIndex = 7;
+        }
+      }
+
+      // Compactação RLE Hexadecimal
+      let rleHex = "";
+      if (bytes.length === 0) return "1600";
+      
+      let count = 1;
+      let currVal = bytes[0];
+
+      for (let i = 1; i < bytes.length; i++) {
+        if (bytes[i] === currVal && count < 255) {
+          count++;
+        } else {
+          rleHex += count.toString(16).padStart(2, '0').toUpperCase() + currVal.toString(16).padStart(2, '0').toUpperCase();
+          currVal = bytes[i];
+          count = 1;
+        }
+      }
+      rleHex += count.toString(16).padStart(2, '0').toUpperCase() + currVal.toString(16).padStart(2, '0').toUpperCase();
+      return rleHex;
+    }
+
+    // --- PROCEDURAL SHAPE GENERATOR PARA PAD ---
+    function drawProceduralShapeOnPad(ctx, width, height, seed = 1) {
+      ctx.fillStyle = '#020617';
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.strokeStyle = '#38bdf8';
+      ctx.fillStyle = '#38bdf8';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      const cx = width / 2;
+      const cy = height / 2;
+      const type = Math.floor(Math.random() * 5);
+
+      if (type === 0) {
+        // Coração
+        ctx.beginPath();
+        for (let t = 0; t <= Math.PI * 2; t += 0.08) {
+          const x = 16 * Math.pow(Math.sin(t), 3);
+          const y = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
+          const px = cx + x * 4.2;
+          const py = cy + y * 4.2;
+          if (t === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+      } else if (type === 1) {
+        // Assinatura cursiva com rasura
+        ctx.beginPath();
+        let sx = 40;
+        let sy = cy + 10;
+        ctx.moveTo(sx, sy);
+        for (let i = 0; i < 8; i++) {
+          sx += 35 + Math.random() * 10;
+          sy += (i % 2 === 0 ? -1 : 1) * (20 + Math.random() * 25);
+          sy = Math.max(20, Math.min(height - 20, sy));
+          ctx.lineTo(sx, sy);
+        }
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(50, height - 25);
+        ctx.lineTo(width - 50, height - 15);
+        ctx.stroke();
+      } else if (type === 2) {
+        // Infinito
+        ctx.beginPath();
+        for (let t = 0; t <= Math.PI * 2; t += 0.08) {
+          const den = 1 + Math.pow(Math.sin(t), 2);
+          const x = (70 * Math.cos(t)) / den;
+          const y = (70 * Math.sin(t) * Math.cos(t)) / den;
+          if (t === 0) ctx.moveTo(cx + x, cy + y);
+          else ctx.lineTo(cx + x, cy + y);
+        }
+        ctx.stroke();
+      } else if (type === 3) {
+        // Estrela
+        ctx.beginPath();
+        const rExt = 45;
+        const rInt = 20;
+        for (let i = 0; i < 10; i++) {
+          const r = (i % 2 === 0) ? rExt : rInt;
+          const ang = i * Math.PI / 5 - Math.PI / 2;
+          const px = cx + r * Math.cos(ang);
+          const py = cy + r * Math.sin(ang);
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.stroke();
+      } else {
+        // Visto formal
+        ctx.beginPath();
+        ctx.lineWidth = 5;
+        ctx.moveTo(cx - 50, cy);
+        ctx.lineTo(cx - 15, cy + 30);
+        ctx.lineTo(cx + 60, cy - 35);
+        ctx.stroke();
+      }
+    }
+
+    // --- CONFIGURAÇÃO DA MESA DIGITALIZADORA (PAD) ---
+    function setupSignaturePad() {
+      padCanvas = document.getElementById('signaturePadCanvas');
+      padCtx = padCanvas.getContext('2d');
+
+      function clearPad() {
+        padCtx.fillStyle = '#020617';
+        padCtx.fillRect(0, 0, padCanvas.width, padCanvas.height);
+      }
+      clearPad();
+
+      function getPos(e) {
+        const rect = padCanvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const scaleX = padCanvas.width / rect.width;
+        const scaleY = padCanvas.height / rect.height;
+        return {
+          x: (clientX - rect.left) * scaleX,
+          y: (clientY - rect.top) * scaleY
+        };
+      }
+
+      function startDraw(e) {
+        e.preventDefault();
+        isDrawing = true;
+        const pos = getPos(e);
+        padCtx.strokeStyle = '#38bdf8';
+        padCtx.lineWidth = 4;
+        padCtx.lineCap = 'round';
+        padCtx.lineJoin = 'round';
+        padCtx.beginPath();
+        padCtx.moveTo(pos.x, pos.y);
+      }
+
+      function moveDraw(e) {
+        if (!isDrawing) return;
+        e.preventDefault();
+        const pos = getPos(e);
+        padCtx.lineTo(pos.x, pos.y);
+        padCtx.stroke();
+      }
+
+      function stopDraw(e) {
+        if (!isDrawing) return;
+        isDrawing = false;
+        padCtx.closePath();
+      }
+
+      padCanvas.addEventListener('mousedown', startDraw);
+      padCanvas.addEventListener('mousemove', moveDraw);
+      window.addEventListener('mouseup', stopDraw);
+
+      padCanvas.addEventListener('touchstart', startDraw, { passive: false });
+      padCanvas.addEventListener('touchmove', moveDraw, { passive: false });
+      window.addEventListener('touchend', stopDraw);
+
+      document.getElementById('btnClearPadForm').addEventListener('click', clearPad);
+      document.getElementById('btnRandomSignatureForm').addEventListener('click', () => {
+        drawProceduralShapeOnPad(padCtx, padCanvas.width, padCanvas.height);
+      });
+    }
+
+    // --- DETECTOR INTELIGENTE DE AUDITORIA (< 60 SEGUNDOS) ---
+    function auditAnomalies() {
+      anomalyMap.clear();
+
+      const porNome = {};
+      database.forEach(rec => {
+        const key = String(rec.nome || '').trim().toLowerCase();
+        if (!porNome[key]) porNome[key] = [];
+        porNome[key].push(rec);
+      });
+
+      Object.values(porNome).forEach(grupo => {
+        if (grupo.length < 2) return;
+        
+        grupo.sort((a, b) => new Date(a.data_hora) - new Date(b.data_hora));
+
+        for (let i = 0; i < grupo.length; i++) {
+          const curr = grupo[i];
+          const currTime = new Date(curr.data_hora).getTime();
+
+          if (i > 0) {
+            const prev = grupo[i - 1];
+            const prevTime = new Date(prev.data_hora).getTime();
+            const diffSeconds = Math.abs((currTime - prevTime) / 1000);
+
+            if (diffSeconds < 60) {
+              const reason = `Intervalo de apenas ${Math.round(diffSeconds)}s com #${prev.id}`;
+              anomalyMap.set(curr.id, { isAnomaly: true, reason, secondsDiff: Math.round(diffSeconds) });
+              
+              if (!anomalyMap.has(prev.id)) {
+                anomalyMap.set(prev.id, { 
+                  isAnomaly: true, 
+                  reason: `Registro com intervalo suspeito (${Math.round(diffSeconds)}s) com #${curr.id}`, 
+                  secondsDiff: Math.round(diffSeconds) 
+                });
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // --- CÁLCULO DE HORÁRIO DE PICO (JANELA DESLIZANTE DE 60 MINUTOS) ---
+    function calculateSlidingPeakWindow(records) {
+      if (!records || records.length === 0) {
+        return { startStr: "--:--", endStr: "--:--", count: 0, percent: "0.0", label: "Sem registros" };
+      }
+
+      const minuteBins = new Array(1440).fill(0);
+
+      records.forEach(r => {
+        const d = new Date(r.data_hora);
+        if (!isNaN(d.getTime())) {
+          const minOfDay = d.getHours() * 60 + d.getMinutes();
+          if (minOfDay >= 0 && minOfDay < 1440) {
+            minuteBins[minOfDay]++;
+          }
+        }
+      });
+
+      let maxCount = -1;
+      let bestStartMin = 720;
+
+      for (let start = 0; start <= 1440 - 60; start++) {
+        let sum = 0;
+        for (let m = start; m < start + 60; m++) {
+          sum += minuteBins[m];
+        }
+        if (sum > maxCount) {
+          maxCount = sum;
+          bestStartMin = start;
+        }
+      }
+
+      const formatMin = (totalMin) => {
+        const h = Math.floor(totalMin / 60);
+        const m = totalMin % 60;
+        return `${String(h).padStart(2, '0')}h${String(m).padStart(2, '0')}`;
+      };
+
+      const startStr = formatMin(bestStartMin);
+      const endStr = formatMin(bestStartMin + 60);
+      const percent = records.length > 0 ? ((maxCount / records.length) * 100).toFixed(1) : "0.0";
+
+      return {
+        startMin: bestStartMin,
+        endMin: bestStartMin + 60,
+        startStr,
+        endStr,
+        count: maxCount,
+        percent,
+        label: `${startStr} – ${endStr}`
+      };
+    }
+
+    // --- ATUALIZAÇÃO DO PAINEL GERAL ---
+    function runAuditAndPeakEngine() {
+      const emptyState = document.getElementById('emptyStateContainer');
+      const dataState = document.getElementById('dashboardDataContainer');
+
+      if (!database || database.length === 0) {
+        emptyState.classList.remove('hidden');
+        dataState.classList.add('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      dataState.classList.remove('hidden');
+
+      auditAnomalies();
+
+      const total = database.length;
+      const participantesUnicos = new Set(database.map(d => String(d.nome || '').trim())).size;
+      const totalAnomalias = anomalyMap.size;
+      const percentAnomalias = total > 0 ? ((totalAnomalias / total) * 100).toFixed(1) : "0.0";
+
+      document.getElementById('statTotalRegistros').innerText = total;
+      document.getElementById('statParticipantesUnicos').innerText = participantesUnicos;
+      document.getElementById('statAnomaliasCount').innerText = totalAnomalias;
+      document.getElementById('statAnomaliasPercent').innerText = `(${percentAnomalias}% auditados)`;
+
+      const peak = calculateSlidingPeakWindow(database);
+      document.getElementById('statHorarioPicoIntervalo').innerText = `${peak.startStr} às ${peak.endStr}`;
+      document.getElementById('statHorarioPicoContagem').innerHTML = `
+        <span class="font-bold text-amber-900">${peak.count} presenças</span> concentradas (${peak.percent}% do volume total)
+      `;
+      document.getElementById('badgePicoGrafico').innerText = `Pico: ${peak.label} (${peak.percent}%)`;
+
+      renderTopRankingPodium();
+      applyFilters();
+    }
+
+    // --- RANKING TOP 5 (PÓDIO) ---
+    function renderTopRankingPodium() {
+      const container = document.getElementById('topRankingContainer');
+      container.innerHTML = '';
+
+      const contagem = {};
+      database.forEach(r => {
+        const n = String(r.nome || 'Não Identificado').trim();
+        contagem[n] = (contagem[n] || 0) + 1;
+      });
+
+      const ranking = Object.entries(contagem)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+
+      const badges = [
+        { icon: 'fa-medal text-amber-500', bg: 'bg-amber-50 border-amber-200', text: '1º Lugar (Ouro)', bar: 'bg-amber-500' },
+        { icon: 'fa-medal text-slate-400', bg: 'bg-slate-50 border-slate-200', text: '2º Lugar (Prata)', bar: 'bg-slate-400' },
+        { icon: 'fa-medal text-amber-700', bg: 'bg-orange-50 border-orange-200', text: '3º Lugar (Bronze)', bar: 'bg-amber-700' },
+        { icon: 'fa-award text-sky-600', bg: 'bg-sky-50 border-sky-200', text: '4º Lugar', bar: 'bg-sky-500' },
+        { icon: 'fa-award text-sky-600', bg: 'bg-sky-50 border-sky-200', text: '5º Lugar', bar: 'bg-sky-500' }
+      ];
+
+      const maxPresencas = ranking.length > 0 ? ranking[0][1] : 1;
+
+      ranking.forEach(([nome, qtd], idx) => {
+        const badge = badges[idx] || badges[4];
+        const pctTotal = ((qtd / database.length) * 100).toFixed(1);
+        const barWidth = Math.max(15, Math.round((qtd / maxPresencas) * 100));
+
+        const card = document.createElement('div');
+        card.className = `${badge.bg} border rounded-xl p-3 flex flex-col justify-between hover:scale-[1.02] transition shadow-xs`;
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between text-[11px] mb-1">
+              <span class="font-bold flex items-center gap-1.5 text-slate-700">
+                <i class="fa-solid ${badge.icon}"></i> ${badge.text}
+              </span>
+              <span class="font-black text-slate-800">${qtd}x</span>
+            </div>
+            <div class="font-bold text-slate-900 text-xs truncate" title="${nome}">${nome}</div>
+          </div>
+          <div class="mt-2.5">
+            <div class="flex justify-between text-[10px] text-slate-400 font-medium mb-1">
+              <span>Frequência</span>
+              <span>${pctTotal}%</span>
+            </div>
+            <div class="w-full bg-slate-200/80 rounded-full h-1.5 overflow-hidden">
+              <div class="${badge.bar} h-1.5 rounded-full" style="width: ${barWidth}%"></div>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // --- GRÁFICOS ECHARTS COM PERCENTUAIS E VALORES ABSOLUTOS ---
+    function updateCharts(records) {
+      const total = records.length;
+      if (total === 0) return;
+
+      // 1. Donut
+      const nomeCount = {};
+      records.forEach(r => {
+        const n = String(r.nome || 'Não Identificado').trim();
+        nomeCount[n] = (nomeCount[n] || 0) + 1;
+      });
+
+      const sortedNames = Object.entries(nomeCount).sort((a, b) => b[1] - a[1]);
+      const donutData = [];
+      let topSoma = 0;
+
+      sortedNames.slice(0, 6).forEach(([nome, count]) => {
+        donutData.push({ name: nome, value: count });
+        topSoma += count;
+      });
+
+      if (sortedNames.length > 6) {
+        donutData.push({ name: 'Outros Participantes', value: total - topSoma });
+      }
+
+      if (!donutChartInstance) {
+        donutChartInstance = echarts.init(document.getElementById('donutChart'));
+      }
+
+      const donutOption = {
+        tooltip: {
+          trigger: 'item',
+          backgroundColor: '#0f172a',
+          borderColor: '#1e293b',
+          textStyle: { color: '#f8fafc', fontSize: 12 },
+          formatter: function(params) {
+            const percent = ((params.value / total) * 100).toFixed(1);
+            return `
+              <div class="font-bold text-sky-400 mb-1">${params.name}</div>
+              <div>Volume Absoluto: <b class="text-white">${params.value} presenças</b></div>
+              <div>Participação Relativa: <b class="text-amber-400">${percent}%</b></div>
+            `;
+          }
+        },
+        legend: {
+          bottom: '0%',
+          left: 'center',
+          icon: 'circle',
+          itemWidth: 8,
+          itemHeight: 8,
+          textStyle: { fontSize: 11, color: '#64748b' }
+        },
+        color: ['#0284c7', '#0ea5e9', '#38bdf8', '#7dd3fc', '#0b2046', '#f59e0b', '#94a3b8'],
+        series: [
+          {
+            name: 'Presenças',
+            type: 'pie',
+            radius: ['45%', '70%'],
+            center: ['50%', '45%'],
+            avoidLabelOverlap: true,
+            itemStyle: {
+              borderRadius: 6,
+              borderColor: '#ffffff',
+              borderWidth: 2
+            },
+            label: {
+              show: true,
+              position: 'outside',
+              formatter: '{d}%',
+              fontSize: 11,
+              fontWeight: 'bold',
+              color: '#334155'
+            },
+            emphasis: {
+              label: {
+                show: true,
+                fontSize: 13,
+                fontWeight: 'bold'
+              }
+            },
+            data: donutData
+          }
+        ]
+      };
+      donutChartInstance.setOption(donutOption);
+
+      // 2. Gráfico de Densidade Horária
+      const horasBins = Array.from({ length: 14 }, (_, i) => i + 7);
+      const horasCount = new Array(14).fill(0);
+
+      records.forEach(r => {
+        const d = new Date(r.data_hora);
+        const h = d.getHours();
+        if (h >= 7 && h <= 20) {
+          horasCount[h - 7]++;
+        }
+      });
+
+      const peakInfo = calculateSlidingPeakWindow(records);
+      const picoStartHour = Math.floor(peakInfo.startMin / 60);
+
+      const barSeriesData = horasBins.map((hora, idx) => {
+        const count = horasCount[idx];
+        const isPeak = (hora === picoStartHour || hora === (picoStartHour + 1)) && peakInfo.count > 0;
+        return {
+          value: count,
+          itemStyle: {
+            color: isPeak ? '#f59e0b' : '#0284c7',
+            borderRadius: [6, 6, 0, 0]
           }
         };
-        reader.readAsText(file);
-      });
-      evt.target.value = "";
-    }
-
-    const dropZone = document.getElementById('drop-zone');
-    dropZone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      dropZone.classList.add('dragover');
-    });
-    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-    dropZone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      dropZone.classList.remove('dragover');
-      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        handleFileSelect({ target: { files: e.dataTransfer.files } });
-      }
-    });
-
-    function clearAllData() {
-      if (confirm("Deseja realmente apagar todos os registros da sessão?")) {
-        allRecords = [];
-        updateDashboard();
-      }
-    }
-
-    // ========================================================================
-    // CRUD: CRIAR, EDITAR E EXCLUIR
-    // ========================================================================
-    function openCreateModal() {
-      document.getElementById('create-name').value = '';
-      const now = new Date();
-      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-      document.getElementById('create-datetime').value = now.toISOString().slice(0, 16);
-      document.getElementById('create-modal').style.display = 'flex';
-    }
-
-    function saveNewRecord() {
-      const name = document.getElementById('create-name').value.trim();
-      const dtVal = document.getElementById('create-datetime').value;
-      if (!name) { alert("Informe o nome do usuário."); return; }
-      if (!dtVal) { alert("Informe a data e hora."); return; }
-
-      const formattedDt = dtVal.replace('T', ' ') + ":00";
-      allRecords.push({
-        id: allRecords.length + 1,
-        nome: name,
-        data_hora: formattedDt,
-        largura: 128,
-        altura: 48,
-        rle_hex: "" // Assinatura manual/vazia
       });
 
-      sortRecordsChronologically();
-      updateDashboard();
-      closeModal('create-modal');
-    }
-
-    function editRecord(index) {
-      const r = allRecords[index];
-      if (!r) return;
-      document.getElementById('edit-record-id').value = index;
-      document.getElementById('edit-name').value = r.nome;
-
-      const d = parseDate(r.data_hora);
-      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-      document.getElementById('edit-datetime').value = d.toISOString().slice(0, 16);
-
-      document.getElementById('edit-modal').style.display = 'flex';
-    }
-
-    function saveEditedRecord() {
-      const idx = parseInt(document.getElementById('edit-record-id').value, 10);
-      const name = document.getElementById('edit-name').value.trim();
-      const dtVal = document.getElementById('edit-datetime').value;
-
-      if (!name) { alert("Informe o nome."); return; }
-      if (!dtVal) { alert("Informe data e hora."); return; }
-
-      allRecords[idx].nome = name;
-      allRecords[idx].data_hora = dtVal.replace('T', ' ') + ":00";
-
-      sortRecordsChronologically();
-      updateDashboard();
-      closeModal('edit-modal');
-    }
-
-    function deleteRecord(index) {
-      const r = allRecords[index];
-      if (!r) return;
-      if (confirm(`Excluir a presença de ${r.nome} (#${r.id})?`)) {
-        allRecords.splice(index, 1);
-        sortRecordsChronologically();
-        updateDashboard();
+      if (!barChartInstance) {
+        barChartInstance = echarts.init(document.getElementById('barChart'));
       }
-    }
 
-    function closeModal(id) {
-      document.getElementById(id).style.display = 'none';
-    }
-
-    // ========================================================================
-    // CONSOLIDACAO EM JSON UNICO (EXPORTACAO)
-    // ========================================================================
-    function exportConsolidatedJSON() {
-      if (allRecords.length === 0) {
-        alert("Nenhum registro para consolidar.");
-        return;
-      }
-      sortRecordsChronologically();
-      const jsonStr = JSON.stringify(allRecords, null, 2);
-      const blob = new Blob([jsonStr], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      const now = new Date();
-      const pad = (n) => String(n).padStart(2, '0');
-      const fileDate = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
-      a.download = `uema_valoriza_consolidado_${fileDate}.json`;
-      a.href = url;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    // ========================================================================
-    // INDICADORES, GRAFICOS & RENDERIZACAO
-    // ========================================================================
-    let hoursChart = null;
-    let shiftsChart = null;
-
-    function initCharts() {
-      if (hoursChart && shiftsChart) return;
-      if (typeof Chart === 'undefined') return;
-
-      const ctxHours = document.getElementById('chart-hours').getContext('2d');
-      hoursChart = new Chart(ctxHours, {
-        type: 'bar',
-        data: {
-          labels: ['07h','08h','09h','10h','11h','12h','13h','14h','15h','16h','17h','18h','19h','20h'],
-          datasets: [{
-            label: 'Atendimentos',
-            data: new Array(14).fill(0),
-            backgroundColor: '#0055A5',
-            borderRadius: 4
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            y: { beginAtZero: true, ticks: { precision: 0 } },
-            x: { grid: { display: false } }
+      const barOption = {
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'shadow' },
+          backgroundColor: '#0f172a',
+          borderColor: '#1e293b',
+          textStyle: { color: '#f8fafc', fontSize: 12 },
+          formatter: function(params) {
+            const p = params[0];
+            const pct = ((p.value / total) * 100).toFixed(1);
+            return `
+              <div class="font-bold text-sky-400 mb-1">Horário: ${p.name}</div>
+              <div>Total de Registros: <b class="text-white">${p.value}</b></div>
+              <div>Concentração no dia: <b class="text-amber-400">${pct}%</b></div>
+            `;
           }
-        }
-      });
-
-      const ctxShifts = document.getElementById('chart-shifts').getContext('2d');
-      shiftsChart = new Chart(ctxShifts, {
-        type: 'doughnut',
-        data: {
-          labels: ['Matutino', 'Vespertino', 'Noturno'],
-          datasets: [{
-            data: [0, 0, 0],
-            backgroundColor: ['#0055A5', '#D9822B', '#002B49']
-          }]
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { position: 'bottom' } }
+        grid: {
+          left: '3%',
+          right: '4%',
+          bottom: '10%',
+          top: '12%',
+          containLabel: true
+        },
+        xAxis: {
+          type: 'category',
+          data: horasBins.map(h => `${h}h`),
+          axisLine: { lineStyle: { color: '#cbd5e1' } },
+          axisLabel: { color: '#64748b', fontSize: 11, fontWeight: 'bold' }
+        },
+        yAxis: {
+          type: 'value',
+          splitLine: { lineStyle: { type: 'dashed', color: '#f1f5f9' } },
+          axisLabel: { color: '#94a3b8', fontSize: 10 }
+        },
+        series: [
+          {
+            name: 'Frequências',
+            type: 'bar',
+            barWidth: '55%',
+            label: {
+              show: true,
+              position: 'top',
+              formatter: function(params) {
+                if (params.value === 0) return '';
+                const pct = ((params.value / total) * 100).toFixed(0);
+                return `${pct}%`;
+              },
+              fontSize: 10,
+              fontWeight: 'bold',
+              color: '#475569'
+            },
+            data: barSeriesData
+          }
+        ]
+      };
+      barChartInstance.setOption(barOption);
+    }
+
+    // --- FILTRAGEM DINÂMICA ---
+    function applyFilters() {
+      const search = document.getElementById('filterSearch').value.trim().toLowerCase();
+      const dateStart = document.getElementById('filterDateStart').value;
+      const dateEnd = document.getElementById('filterDateEnd').value;
+      const statusFilter = document.getElementById('filterStatus').value;
+
+      filteredRecords = database.filter(item => {
+        const itemNome = String(item.nome || '').toLowerCase();
+        const itemId = String(item.id || '');
+        const matchSearch = !search || itemNome.includes(search) || itemId.includes(search);
+
+        let matchDateStart = true;
+        if (dateStart && item.data_hora) {
+          const recDate = String(item.data_hora).substring(0, 10);
+          matchDateStart = recDate >= dateStart;
+        }
+
+        let matchDateEnd = true;
+        if (dateEnd && item.data_hora) {
+          const recDate = String(item.data_hora).substring(0, 10);
+          matchDateEnd = recDate <= dateEnd;
+        }
+
+        let matchStatus = true;
+        const isAnom = anomalyMap.has(item.id);
+        if (statusFilter === 'anomalies') matchStatus = isAnom;
+        else if (statusFilter === 'regular') matchStatus = !isAnom;
+
+        return matchSearch && matchDateStart && matchDateEnd && matchStatus;
+      });
+
+      sortFilteredRecords();
+      currentPage = 1;
+      renderTable();
+      updateCharts(filteredRecords);
+    }
+
+    // --- ORDENAÇÃO DINÂMICA ---
+    function toggleSort(col) {
+      if (sortColumn === col) {
+        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        sortColumn = col;
+        sortDirection = 'asc';
+      }
+      updateSortIcons();
+      sortFilteredRecords();
+      renderTable();
+    }
+
+    function updateSortIcons() {
+      ['id', 'nome', 'data_hora', 'status'].forEach(c => {
+        const icon = document.getElementById(`sortIcon_${c}`);
+        if (!icon) return;
+        if (sortColumn === c) {
+          icon.className = `fa-solid fa-sort-${sortDirection === 'asc' ? 'up text-sky-600' : 'down text-sky-600'}`;
+        } else {
+          icon.className = 'fa-solid fa-sort text-slate-300';
         }
       });
     }
 
-    function getShift(hour) {
-      if (hour >= 6 && hour < 12) return { name: 'Matutino', class: 'tag-mat' };
-      if (hour >= 12 && hour < 18) return { name: 'Vespertino', class: 'tag-vesp' };
-      return { name: 'Noturno', class: 'tag-not' };
-    }
+    function sortFilteredRecords() {
+      filteredRecords.sort((a, b) => {
+        let valA, valB;
 
-    function updateDashboard() {
-      const total = allRecords.length;
-      document.getElementById('records-counter-badge').innerText = `Base Consolidada: ${total} registro(s)`;
-      document.getElementById('kpi-total').innerText = total;
-
-      if (total === 0) {
-        document.getElementById('kpi-total-sub').innerText = "Nenhum dado importado";
-        document.getElementById('kpi-unique').innerText = "0";
-        document.getElementById('kpi-peak').innerText = "--:00";
-        document.getElementById('kpi-peak-sub').innerText = "Sem dados";
-        document.getElementById('kpi-shift').innerText = "--";
-        renderTable([]);
-        if (hoursChart && shiftsChart) {
-          hoursChart.data.datasets[0].data = new Array(14).fill(0);
-          hoursChart.update();
-          shiftsChart.data.datasets[0].data = [0, 0, 0];
-          shiftsChart.update();
+        if (sortColumn === 'id') {
+          valA = Number(a.id) || 0;
+          valB = Number(b.id) || 0;
+          return sortDirection === 'asc' ? valA - valB : valB - valA;
+        } else if (sortColumn === 'nome') {
+          valA = String(a.nome || '').toLowerCase();
+          valB = String(b.nome || '').toLowerCase();
+          return sortDirection === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        } else if (sortColumn === 'data_hora') {
+          valA = new Date(a.data_hora).getTime() || 0;
+          valB = new Date(b.data_hora).getTime() || 0;
+          return sortDirection === 'asc' ? valA - valB : valB - valA;
+        } else if (sortColumn === 'status') {
+          valA = anomalyMap.has(a.id) ? 1 : 0;
+          valB = anomalyMap.has(b.id) ? 1 : 0;
+          return sortDirection === 'asc' ? valA - valB : valB - valA;
         }
-        return;
-      }
-
-      const uniqueNames = new Set(allRecords.map(r => r.nome.trim().toUpperCase()));
-      document.getElementById('kpi-unique').innerText = uniqueNames.size;
-
-      const hourCounts = new Array(24).fill(0);
-      let mat = 0, vesp = 0, notu = 0;
-
-      allRecords.forEach(r => {
-        const d = parseDate(r.data_hora);
-        const h = d.getHours();
-        hourCounts[h]++;
-        if (h >= 6 && h < 12) mat++;
-        else if (h >= 12 && h < 18) vesp++;
-        else notu++;
+        return 0;
       });
-
-      let maxH = 0, maxCount = 0;
-      for (let i = 0; i < 24; i++) {
-        if (hourCounts[i] > maxCount) {
-          maxCount = hourCounts[i];
-          maxH = i;
-        }
-      }
-      document.getElementById('kpi-peak').innerText = `${String(maxH).padStart(2, '0')}:00`;
-      document.getElementById('kpi-peak-sub').innerText = `${maxCount} presença(s) registrada(s)`;
-
-      let mainShift = "Matutino";
-      if (vesp >= mat && vesp >= notu) mainShift = "Vespertino";
-      if (notu >= mat && notu >= vesp) mainShift = "Noturno";
-      document.getElementById('kpi-shift').innerText = mainShift;
-      document.getElementById('kpi-shift-sub').innerText = `${Math.max(mat, vesp, notu)} registro(s)`;
-
-      if (hoursChart) {
-        hoursChart.data.datasets[0].data = hourCounts.slice(7, 21);
-        hoursChart.update();
-      }
-
-      if (shiftsChart) {
-        shiftsChart.data.datasets[0].data = [mat, vesp, notu];
-        shiftsChart.update();
-      }
-
-      renderTable(allRecords);
     }
 
-    function renderTable(data) {
-      const tbody = document.getElementById('table-body');
+    // --- RENDERIZAÇÃO DA TABELA COM CRUD (EDITAR / EXCLUIR / INSPECIONAR) ---
+    function renderTable() {
+      const tbody = document.getElementById('tableBody');
       tbody.innerHTML = '';
 
-      if (data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:30px;">Nenhum registro encontrado.</td></tr>`;
+      const totalItems = filteredRecords.length;
+      const effectivePageSize = pageSize === 'all' ? totalItems : parseInt(pageSize);
+      
+      const startIndex = (currentPage - 1) * effectivePageSize;
+      const endIndex = Math.min(startIndex + effectivePageSize, totalItems);
+      const pageItems = filteredRecords.slice(startIndex, endIndex);
+
+      if (pageItems.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="py-12 text-center text-slate-400">
+              <i class="fa-solid fa-inbox text-3xl mb-2 text-slate-300"></i>
+              <p class="font-medium text-xs">Nenhum registro encontrado.</p>
+            </td>
+          </tr>
+        `;
+        renderPagination(0, 0, 0);
         return;
       }
 
-      data.forEach((r, idx) => {
-        const d = parseDate(r.data_hora);
-        const h = d.getHours();
-        const shift = getShift(h);
+      pageItems.forEach(item => {
+        const isAnomaly = anomalyMap.has(item.id);
+        const anomData = anomalyMap.get(item.id);
 
         const tr = document.createElement('tr');
+        tr.className = `hover:bg-slate-50/80 transition duration-150 ${isAnomaly ? 'bg-rose-50/30' : ''}`;
+
+        const statusBadge = isAnomaly 
+          ? `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-300/60" title="${anomData.reason}">
+               <i class="fa-solid fa-triangle-exclamation"></i> Duplicidade (${anomData.secondsDiff}s)
+             </span>`
+          : `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+               <i class="fa-solid fa-check"></i> Regular
+             </span>`;
+
+        const canvasId = `canvas_reg_${item.id}`;
+
         tr.innerHTML = `
-          <td><b>#${r.id}</b></td>
-          <td><b>${escapeHtml(r.nome)}</b></td>
-          <td>${formatDateBR(r.data_hora)}</td>
-          <td><span class="tag-period ${shift.class}">${shift.name}</span></td>
-          <td style="text-align:center;">
-            <div class="actions-cell">
-              <button class="btn-action-icon" title="Ver Assinatura" onclick="openSignatureModal(${idx})">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          <td class="py-3 px-4 font-mono font-bold text-slate-600">#${item.id}</td>
+          <td class="py-3 px-4">
+            <div class="font-bold text-slate-900">${item.nome || 'Sem nome'}</div>
+            <div class="text-[10px] text-slate-400">ID #${item.id}</div>
+          </td>
+          <td class="py-3 px-4 font-mono text-slate-600">
+            <div class="flex items-center gap-1.5">
+              <i class="fa-regular fa-clock text-slate-400 text-[10px]"></i>
+              <span>${item.data_hora}</span>
+            </div>
+          </td>
+          <td class="py-3 px-4 text-center">
+            <div class="inline-block p-1 bg-white border border-slate-200 rounded-lg shadow-2xs hover:border-sky-500 cursor-pointer transition transform hover:scale-105" onclick="openInspectionModal(${item.id})" title="Inspecionar traço em alta resolução">
+              <canvas id="${canvasId}" width="128" height="48" class="w-20 h-7 pixelated rounded bg-slate-50 block"></canvas>
+            </div>
+          </td>
+          <td class="py-3 px-4">
+            ${statusBadge}
+          </td>
+          <td class="py-3 px-4 text-right whitespace-nowrap">
+            <div class="inline-flex items-center gap-1.5">
+              <button onclick="openInspectionModal(${item.id})" class="p-1.5 bg-slate-100 hover:bg-sky-100 text-slate-600 hover:text-sky-700 rounded-lg transition" title="Inspecionar">
+                <i class="fa-solid fa-magnifying-glass"></i>
               </button>
-              <button class="btn-action-icon btn-action-edit" title="Editar" onclick="editRecord(${idx})">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+              <button onclick="openEditRecordModal(${item.id})" class="p-1.5 bg-slate-100 hover:bg-amber-100 text-slate-600 hover:text-amber-700 rounded-lg transition" title="Editar este registro">
+                <i class="fa-solid fa-pen-to-square"></i>
               </button>
-              <button class="btn-action-icon btn-action-del" title="Excluir" onclick="deleteRecord(${idx})">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              <button onclick="promptDeleteRecord(${item.id})" class="p-1.5 bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-700 rounded-lg transition" title="Excluir este registro">
+                <i class="fa-solid fa-trash-can"></i>
               </button>
             </div>
           </td>
-          <td class="print-sig-col">
-            <canvas id="print-canvas-${idx}" width="128" height="48" style="border:1px solid #ccc;"></canvas>
-          </td>
         `;
+
         tbody.appendChild(tr);
 
         setTimeout(() => {
-          const printCvs = document.getElementById(`print-canvas-${idx}`);
-          if (printCvs && r.rle_hex) renderSignatureOnCanvas(r.rle_hex, printCvs, 128, 48);
+          const cv = document.getElementById(canvasId);
+          if (cv) renderRleToCanvas(item.rle_hex, cv, false);
         }, 10);
       });
+
+      renderPagination(totalItems, startIndex + 1, endIndex);
     }
 
-    function filterTable() {
-      const term = document.getElementById('table-search').value.toLowerCase().trim();
-      const filtered = allRecords.filter(r => 
-        r.nome.toLowerCase().includes(term) || 
-        formatDateBR(r.data_hora).toLowerCase().includes(term)
-      );
-      renderTable(filtered);
-    }
+    // --- CONTROLES DE PAGINAÇÃO ---
+    function renderPagination(total, from, to) {
+      const info = document.getElementById('paginationInfo');
+      const controls = document.getElementById('paginationControls');
+      controls.innerHTML = '';
 
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    }
-
-    // ========================================================================
-    // VISUALIZADOR DE ASSINATURA
-    // ========================================================================
-    function openSignatureModal(index) {
-      const record = allRecords[index];
-      if (!record) return;
-      currentSelectedRecord = record;
-
-      document.getElementById('modal-title').innerText = `Assinatura: ${record.nome}`;
-      const cvs = document.getElementById('modal-canvas');
-      renderSignatureOnCanvas(record.rle_hex, cvs, 320, 120);
-
-      document.getElementById('modal-meta').innerHTML = `
-        <div><b>Nome:</b> ${escapeHtml(record.nome)}</div>
-        <div><b>Data e Hora (BR):</b> ${formatDateBR(record.data_hora)}</div>
-        <div><b>Status Assinatura:</b> ${record.rle_hex ? 'Vetor RLE Gravado' : 'Sem assinatura gráfica'}</div>
-      `;
-
-      document.getElementById('sig-modal').style.display = 'flex';
-    }
-
-    function downloadCurrentSignature() {
-      if (!currentSelectedRecord) return;
-      const cvs = document.getElementById('modal-canvas');
-      const a = document.createElement('a');
-      a.download = `assinatura_${currentSelectedRecord.nome.replace(/\s+/g, '_')}_${currentSelectedRecord.id}.png`;
-      a.href = cvs.toDataURL('image/png');
-      a.click();
-    }
-
-    function exportToPDF() {
-      if (allRecords.length === 0) {
-        alert("Carregue ou adicione ao menos um registro antes de gerar o relatório.");
+      if (total === 0) {
+        info.innerText = 'Mostrando 0 de 0 registros';
         return;
       }
-      updateReportGenerationTimestamp();
-      window.print();
+
+      info.innerHTML = `Mostrando <span class="font-bold text-slate-800">${from}</span> a <span class="font-bold text-slate-800">${to}</span> de <span class="font-bold text-slate-800">${total}</span> lançamentos`;
+
+      if (pageSize === 'all') return;
+
+      const totalPages = Math.ceil(total / parseInt(pageSize));
+      if (totalPages <= 1) return;
+
+      const prevBtn = document.createElement('button');
+      prevBtn.className = `px-2.5 py-1 text-xs rounded-lg border border-slate-200 font-semibold transition ${currentPage === 1 ? 'opacity-40 cursor-not-allowed bg-slate-50' : 'hover:bg-slate-100 text-slate-700'}`;
+      prevBtn.innerHTML = `<i class="fa-solid fa-chevron-left"></i>`;
+      prevBtn.disabled = currentPage === 1;
+      prevBtn.onclick = () => { if (currentPage > 1) { currentPage--; renderTable(); } };
+      controls.appendChild(prevBtn);
+
+      for (let p = 1; p <= totalPages; p++) {
+        if (p === 1 || p === totalPages || (p >= currentPage - 1 && p <= currentPage + 1)) {
+          const pageBtn = document.createElement('button');
+          pageBtn.className = `px-2.5 py-1 text-xs rounded-lg font-semibold transition ${p === currentPage ? 'bg-sky-600 text-white shadow-xs' : 'border border-slate-200 text-slate-600 hover:bg-slate-100'}`;
+          pageBtn.innerText = p;
+          pageBtn.onclick = () => { currentPage = p; renderTable(); };
+          controls.appendChild(pageBtn);
+        } else if (p === currentPage - 2 || p === currentPage + 2) {
+          const dots = document.createElement('span');
+          dots.className = 'px-1 text-slate-400 text-xs';
+          dots.innerText = '...';
+          controls.appendChild(dots);
+        }
+      }
+
+      const nextBtn = document.createElement('button');
+      nextBtn.className = `px-2.5 py-1 text-xs rounded-lg border border-slate-200 font-semibold transition ${currentPage === totalPages ? 'opacity-40 cursor-not-allowed bg-slate-50' : 'hover:bg-slate-100 text-slate-700'}`;
+      nextBtn.innerHTML = `<i class="fa-solid fa-chevron-right"></i>`;
+      nextBtn.disabled = currentPage === totalPages;
+      nextBtn.onclick = () => { if (currentPage < totalPages) { currentPage++; renderTable(); } };
+      controls.appendChild(nextBtn);
     }
+
+    // --- OPERAÇÕES CRUD (CREATE, UPDATE, DELETE) ---
+
+    // Abrir Modal de Criação
+    function openCreateRecordModal() {
+      document.getElementById('formRecordId').value = '';
+      document.getElementById('formModalTitle').innerText = 'Novo Lançamento de Frequência';
+      document.getElementById('formModalIcon').className = 'fa-solid fa-plus-circle';
+      document.getElementById('formSubmitBtnText').innerText = 'Cadastrar Registro';
+      document.getElementById('formNome').value = '';
+      
+      // Data atual padrão
+      const now = new Date();
+      const localIso = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 19);
+      document.getElementById('formDataHora').value = localIso;
+
+      // Desenha automaticamente um traço procedural de partida
+      drawProceduralShapeOnPad(padCtx, padCanvas.width, padCanvas.height);
+
+      document.getElementById('modalRecordForm').classList.remove('hidden');
+    }
+
+    // Abrir Modal de Edição
+    function openEditRecordModal(id) {
+      const record = database.find(r => r.id === id);
+      if (!record) return;
+
+      document.getElementById('formRecordId').value = record.id;
+      document.getElementById('formModalTitle').innerText = `Editar Lançamento #${record.id}`;
+      document.getElementById('formModalIcon').className = 'fa-solid fa-pen-to-square';
+      document.getElementById('formSubmitBtnText').innerText = 'Salvar Alterações';
+      document.getElementById('formNome').value = record.nome;
+
+      // Converte data para formato datetime-local
+      try {
+        const d = new Date(record.data_hora);
+        if (!isNaN(d.getTime())) {
+          const localIso = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 19);
+          document.getElementById('formDataHora').value = localIso;
+        } else {
+          document.getElementById('formDataHora').value = record.data_hora;
+        }
+      } catch (err) {
+        document.getElementById('formDataHora').value = record.data_hora;
+      }
+
+      // Renderiza a assinatura existente no pad
+      padCtx.fillStyle = '#020617';
+      padCtx.fillRect(0, 0, padCanvas.width, padCanvas.height);
+      const tempCv = document.createElement('canvas');
+      renderRleToCanvas(record.rle_hex, tempCv, true);
+      padCtx.drawImage(tempCv, 0, 0, padCanvas.width, padCanvas.height);
+
+      document.getElementById('modalRecordForm').classList.remove('hidden');
+    }
+
+    function closeRecordFormModal() {
+      document.getElementById('modalRecordForm').classList.add('hidden');
+    }
+
+    // Formulário Submit (Salvar Create ou Update)
+    document.getElementById('recordForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const recordId = document.getElementById('formRecordId').value;
+      const nome = document.getElementById('formNome').value.trim();
+      let dataHora = document.getElementById('formDataHora').value.replace('T', ' ');
+      if (dataHora.length === 16) dataHora += ':00'; // Garante segundos
+
+      const rleHex = convertPadCanvasToRleHex(padCanvas);
+
+      if (recordId) {
+        // UPDATE
+        const idx = database.findIndex(r => r.id === Number(recordId));
+        if (idx !== -1) {
+          database[idx].nome = nome;
+          database[idx].data_hora = dataHora;
+          database[idx].rle_hex = rleHex;
+          showToast(`Registro #${recordId} atualizado com sucesso!`, 'success');
+        }
+      } else {
+        // CREATE
+        const newId = database.length > 0 ? Math.max(...database.map(r => r.id)) + 1 : 1;
+        database.push({
+          id: newId,
+          nome: nome,
+          data_hora: dataHora,
+          largura: 128,
+          altura: 48,
+          rle_hex: rleHex
+        });
+        showToast(`Novo lançamento #${newId} registrado com sucesso!`, 'success');
+      }
+
+      closeRecordFormModal();
+      runAuditAndPeakEngine();
+    });
+
+    // Confirmação e Execução de Exclusão (DELETE)
+    function promptDeleteRecord(id) {
+      const record = database.find(r => r.id === id);
+      if (!record) return;
+
+      pendingDeleteId = id;
+      document.getElementById('deleteRecordNameBadge').innerText = `"${record.nome}" (#${record.id})`;
+      document.getElementById('modalDeleteConfirm').classList.remove('hidden');
+    }
+
+    function closeDeleteModal() {
+      document.getElementById('modalDeleteConfirm').classList.add('hidden');
+      pendingDeleteId = null;
+    }
+
+    document.getElementById('btnConfirmDeleteAction').addEventListener('click', () => {
+      if (pendingDeleteId !== null) {
+        database = database.filter(r => r.id !== pendingDeleteId);
+        showToast(`Registro #${pendingDeleteId} removido da base.`, 'info');
+        closeDeleteModal();
+        runAuditAndPeakEngine();
+      }
+    });
+
+    // --- MODAL DE INSPEÇÃO FORENSE ---
+    function openInspectionModal(id) {
+      const record = database.find(r => r.id === id);
+      if (!record) return;
+
+      currentInspectedRecord = record;
+      isInverted = false;
+
+      document.getElementById('modalInspNome').innerText = record.nome || 'Não Identificado';
+      document.getElementById('modalInspDataHora').innerText = `Lançamento: ${record.data_hora} (ID #${record.id})`;
+      document.getElementById('modalInspRleText').innerText = record.rle_hex || '---';
+
+      const isAnomaly = anomalyMap.has(record.id);
+      const badge = document.getElementById('modalInspStatusBadge');
+      if (isAnomaly) {
+        const data = anomalyMap.get(record.id);
+        badge.className = 'font-bold text-rose-600';
+        badge.innerText = `Alerta de Duplicidade (${data.reason})`;
+      } else {
+        badge.className = 'font-bold text-emerald-600';
+        badge.innerText = 'Lançamento Regular Verificado';
+      }
+
+      const modalCanvas = document.getElementById('modalCanvas');
+      renderRleToCanvas(record.rle_hex, modalCanvas, isInverted);
+
+      document.getElementById('modalInspection').classList.remove('hidden');
+    }
+
+    function closeInspectionModal() {
+      document.getElementById('modalInspection').classList.add('hidden');
+      currentInspectedRecord = null;
+    }
+
+    document.getElementById('btnToggleInvertCanvas').addEventListener('click', () => {
+      if (!currentInspectedRecord) return;
+      isInverted = !isInverted;
+      const modalCanvas = document.getElementById('modalCanvas');
+      renderRleToCanvas(currentInspectedRecord.rle_hex, modalCanvas, isInverted);
+      showToast(isInverted ? 'Modo de Contraste Invertido ativado' : 'Visualização Padrão restaurada', 'info');
+    });
+
+    document.getElementById('btnDownloadSignature').addEventListener('click', () => {
+      if (!currentInspectedRecord) return;
+      const modalCanvas = document.getElementById('modalCanvas');
+      const link = document.createElement('a');
+      link.download = `assinatura_uema_${currentInspectedRecord.nome || 'registro'}_${currentInspectedRecord.id}.png`;
+      link.href = modalCanvas.toDataURL('image/png');
+      link.click();
+      showToast('Assinatura exportada em PNG!', 'success');
+    });
+
+    document.getElementById('btnCopyRLE').addEventListener('click', () => {
+      if (!currentInspectedRecord) return;
+      const text = currentInspectedRecord.rle_hex;
+      const tempInput = document.createElement('textarea');
+      tempInput.value = text;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      try {
+        document.execCommand('copy');
+        showToast('Código RLE Hex copiado com sucesso!', 'success');
+      } catch (err) {
+        showToast('Não foi possível copiar automaticamente.', 'warning');
+      }
+      document.body.removeChild(tempInput);
+    });
+
+    // --- GERADOR DE 100 REGISTROS ALEATÓRIOS PARA SIMULAÇÃO ---
+    function generateRandomDatasetInBatch(qtd = 100) {
+      const nomesPool = [
+        "Philipe", "Suíça", "Camila Silva", "Rodrigo Costa", "Mariana Rios",
+        "Lucas Mendonça", "Beatriz Castro", "Gabriel Pires", "Juliana Meireles",
+        "Felipe Nogueira", "Larissa Duarte", "Thiago Moura", "Fernanda Paiva",
+        "Rafael Alencar", "Aline Torres", "Bruno Fontes", "Letícia Xavier",
+        "Diego Esteves", "Amanda Vianna", "Gustavo Prado", "Natália Farias",
+        "André Siqueira", "Carolina Teles", "Leonardo Lins", "Renata Diniz",
+        "Mateus Guimarães", "Bruna Portela", "Danilo Antunes", "Priscila Gusmão"
+      ];
+
+      const dummyCanvas = document.createElement('canvas');
+      dummyCanvas.width = 384;
+      dummyCanvas.height = 144;
+      const dCtx = dummyCanvas.getContext('2d');
+
+      const batch = [];
+      const baseYear = 2026;
+      const baseMonth = 9; // Outubro (0-indexed)
+
+      for (let i = 1; i <= qtd; i++) {
+        const nome = nomesPool[Math.floor(Math.random() * nomesPool.length)];
+        const dia = Math.floor(Math.random() * 26) + 1;
+        
+        // Simulação com pico entre 12h e 13h
+        let hora;
+        if (Math.random() < 0.45) {
+          hora = (Math.random() > 0.4) ? 12 : 13;
+        } else {
+          hora = Math.floor(Math.random() * 11) + 8; // 8h às 18h
+        }
+        const min = Math.floor(Math.random() * 60);
+        const seg = Math.floor(Math.random() * 60);
+        const dt = new Date(baseYear, baseMonth, dia, hora, min, seg);
+        const dataStr = dt.toISOString().replace('T', ' ').substring(0, 19);
+
+        drawProceduralShapeOnPad(dCtx, dummyCanvas.width, dummyCanvas.height, i);
+        const rleHex = convertPadCanvasToRleHex(dummyCanvas);
+
+        batch.push({
+          id: i,
+          nome: nome,
+          data_hora: dataStr,
+          largura: 128,
+          altura: 48,
+          rle_hex: rleHex
+        });
+      }
+
+      // Injeta duplicidade intencional para demonstrar auditoria (< 60s)
+      if (batch.length >= 2) {
+        batch[1].nome = batch[0].nome;
+        const d0 = new Date(batch[0].data_hora);
+        d0.setSeconds(d0.getSeconds() + 25);
+        batch[1].data_hora = d0.toISOString().replace('T', ' ').substring(0, 19);
+      }
+
+      database = batch;
+      runAuditAndPeakEngine();
+      showToast(`${qtd} registros gerados dinamicamente para simulação!`, 'success');
+    }
+
+    // --- GERADOR E DOWNLOAD DE MODELO DE PLANILHA EXCEL (.XLSX) ---
+    document.getElementById('btnDownloadTemplate').addEventListener('click', () => {
+      try {
+        const headers = [
+          ["id", "nome", "data_hora", "largura", "altura", "rle_hex"]
+        ];
+
+        const sampleRows = [
+          [
+            1,
+            "Philipe",
+            "2026-10-27 13:09:31",
+            128,
+            48,
+            "160001800F0001806C00038001FF01F80B40032001FF094003800C00013801C00C0001FE0C00011001E00D0001801F00011001080204040202010400010301FC0D0001FF0700028001400130010F0D0001C001070B00010101FE0A0001F00200010701080700041001FF03100220034002800400018001600110020801C8017813000640012301FC05200410030801FF01340114010C02060203070101030106010C01F0080001FF0C0001FF0A00010101FE0E0001FF0900018001C101E2015C01F0011F011001080104010201011B00010301FC018009000170017F100001FF0900010101FE0B00011F01300A00017F01C00D0001FF040001020103040104000101020204041C00010F4D0001011600"
+          ],
+          [
+            2,
+            "Suíça",
+            "2026-10-27 13:10:10",
+            128,
+            48,
+            "9B0001C01100018001E00198018601811080190001200130010F070001800160011C01030900018019000280034003200310020801E8011E010504040602040101C10131010F0101140002010302010401C80130190001F0010E010120000204020202010A0001800160011801070E0001C0013E0101010002800240012002100108020404020401010202820244012801F00110010C01030800018001400138010401020101090001C00130010C01030700018001400130010C01020200018001600110010C020002800F0001060504050801C80138010C01130F100130011801170212011106100408030403020301018001600120011C01020101080001C00170010C01032B0001010E0001011900018101C001E00118010F0104010201011100"
+          ]
+        ];
+
+        const ws = XLSX.utils.aoa_to_sheet([...headers, ...sampleRows]);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Frequencias");
+
+        XLSX.writeFile(wb, "modelo_uema_valoriza_frequencias.xlsx");
+        showToast("Modelo Excel baixado com sucesso!", "success");
+      } catch (err) {
+        showToast("Erro ao gerar modelo Excel.", "error");
+      }
+    });
+
+    // --- IMPORTADOR EXCEL (.XLSX, .XLS, .CSV) ---
+    document.getElementById('xlsxFileInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const data = new Uint8Array(evt.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheet = workbook.SheetNames[0];
+          const rawRows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { defval: "" });
+
+          if (!rawRows || rawRows.length === 0) {
+            showToast("Planilha vazia.", "warning");
+            return;
+          }
+
+          database = rawRows.map((row, idx) => ({
+            id: Number(row.id || row.ID || (idx + 1)),
+            nome: String(row.nome || row.Nome || row.participante || "Não informado").trim(),
+            data_hora: String(row.data_hora || row.Data || "").trim(),
+            largura: Number(row.largura || 128),
+            altura: Number(row.altura || 48),
+            rle_hex: String(row.rle_hex || row.rle || "").trim()
+          }));
+
+          runAuditAndPeakEngine();
+          showToast(`Sucesso! ${database.length} registros importados da planilha.`, 'success');
+        } catch (err) {
+          showToast("Erro ao ler planilha Excel.", "error");
+        }
+      };
+      reader.readAsArrayBuffer(file);
+      e.target.value = '';
+    });
+
+    // --- IMPORTADOR JSON ---
+    document.getElementById('jsonFileInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const imported = JSON.parse(evt.target.result);
+          if (Array.isArray(imported) && imported.length > 0) {
+            database = imported.map((r, i) => ({
+              id: Number(r.id) || (i + 1),
+              nome: String(r.nome || 'Não informado').trim(),
+              data_hora: String(r.data_hora || '').trim(),
+              largura: Number(r.largura) || 128,
+              altura: Number(r.altura) || 48,
+              rle_hex: String(r.rle_hex || '').trim()
+            }));
+
+            runAuditAndPeakEngine();
+            showToast(`Sucesso! ${database.length} registros importados do JSON.`, 'success');
+          } else {
+            showToast('JSON deve conter uma lista de objetos.', 'error');
+          }
+        } catch (err) {
+          showToast('Erro de sintaxe no arquivo JSON.', 'error');
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+    });
+
+    // --- EXPORTAR BASE EM JSON ---
+    document.getElementById('btnExportJSON').addEventListener('click', () => {
+      if (database.length === 0) {
+        showToast('Não há dados carregados para exportar.', 'warning');
+        return;
+      }
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(database, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `uema_valoriza_frequencias_${new Date().toISOString().substring(0, 10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToast('Arquivo JSON exportado!', 'success');
+    });
+
+    // --- MODAL DE RELATÓRIO OFICIAL (PDF & IMPRESSÃO) ---
+    function openReportModal() {
+      if (database.length === 0) {
+        showToast('Adicione ou importe registros antes de emitir o relatório.', 'warning');
+        return;
+      }
+
+      const dates = database.map(d => String(d.data_hora).substring(0, 10)).filter(Boolean).sort();
+      document.getElementById('reportStartDate').value = dates[0] || '';
+      document.getElementById('reportEndDate').value = dates[dates.length - 1] || '';
+      updateReportPreviewCount();
+
+      document.getElementById('modalReportConfig').classList.remove('hidden');
+    }
+
+    function closeReportModal() {
+      document.getElementById('modalReportConfig').classList.add('hidden');
+    }
+
+    function updateReportPreviewCount() {
+      const sDate = document.getElementById('reportStartDate').value;
+      const eDate = document.getElementById('reportEndDate').value;
+      const excludeAnom = document.getElementById('reportExcludeAnomalies').checked;
+
+      const filtered = database.filter(item => {
+        const d = String(item.data_hora).substring(0, 10);
+        const matchDate = (!sDate || d >= sDate) && (!eDate || d <= eDate);
+        const matchAnom = excludeAnom ? !anomalyMap.has(item.id) : true;
+        return matchDate && matchAnom;
+      });
+
+      document.getElementById('reportPreviewRecordCount').innerText = `${filtered.length} registros selecionados`;
+    }
+
+    document.getElementById('reportStartDate').addEventListener('change', updateReportPreviewCount);
+    document.getElementById('reportEndDate').addEventListener('change', updateReportPreviewCount);
+    document.getElementById('reportExcludeAnomalies').addEventListener('change', updateReportPreviewCount);
+
+    document.getElementById('btnGenerateReportPrint').addEventListener('click', () => {
+      const sDate = document.getElementById('reportStartDate').value;
+      const eDate = document.getElementById('reportEndDate').value;
+      const includeSignatures = document.getElementById('reportIncludeSignatures').checked;
+      const excludeAnomalies = document.getElementById('reportExcludeAnomalies').checked;
+      const includeSummary = document.getElementById('reportIncludeSummary').checked;
+
+      const reportItems = database.filter(item => {
+        const d = String(item.data_hora).substring(0, 10);
+        const matchDate = (!sDate || d >= sDate) && (!eDate || d <= eDate);
+        const matchAnom = excludeAnomalies ? !anomalyMap.has(item.id) : true;
+        return matchDate && matchAnom;
+      }).sort((a, b) => new Date(a.data_hora) - new Date(b.data_hora));
+
+      if (reportItems.length === 0) {
+        showToast('Nenhum registro para emitir no período selecionado.', 'warning');
+        return;
+      }
+
+      const peak = calculateSlidingPeakWindow(reportItems);
+      const totalPessoas = new Set(reportItems.map(r => r.nome)).size;
+      const totalAnomaliasPeriodo = reportItems.filter(r => anomalyMap.has(r.id)).length;
+
+      const container = document.getElementById('printReportContainer');
+      container.innerHTML = `
+        <div style="border-bottom: 2px solid #0b2046; padding-bottom: 15px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <h1 style="font-size: 18px; font-weight: 800; color: #0b2046; margin: 0; text-transform: uppercase;">Universidade Estadual do Maranhão - UEMA</h1>
+            <h2 style="font-size: 14px; font-weight: 700; color: #0284c7; margin: 3px 0 0 0;">Programa UEMA Valoriza • Relatório Oficial de Frequência & Auditoria</h2>
+            <p style="font-size: 11px; color: #64748b; margin: 2px 0 0 0;">Período Auditado: <b>${sDate || 'Início'}</b> até <b>${eDate || 'Atual'}</b> | Emitido em: <b>${new Date().toLocaleString('pt-BR')}</b></p>
+          </div>
+          <div style="text-align: right; font-size: 10px; color: #475569;">
+            <div style="font-weight: bold; border: 1px solid #cbd5e1; padding: 4px 8px; border-radius: 6px;">AUTENTICAÇÃO INSTITUCIONAL</div>
+            <div style="margin-top: 3px;">Código de Controle: <b>UEMA-${Date.now().toString(36).toUpperCase()}</b></div>
+          </div>
+        </div>
+
+        ${includeSummary ? `
+        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 20px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; font-size: 11px;">
+          <div>
+            <span style="color: #64748b; display: block; font-size: 10px; text-transform: uppercase;">Total de Registros</span>
+            <b style="font-size: 14px; color: #0b2046;">${reportItems.length}</b>
+          </div>
+          <div>
+            <span style="color: #64748b; display: block; font-size: 10px; text-transform: uppercase;">Participantes Únicos</span>
+            <b style="font-size: 14px; color: #0b2046;">${totalPessoas}</b>
+          </div>
+          <div>
+            <span style="color: #b45309; display: block; font-size: 10px; text-transform: uppercase;">Pico Móvel (60 min)</span>
+            <b style="font-size: 13px; color: #b45309;">${peak.startStr} às ${peak.endStr} (${peak.count} presenças)</b>
+          </div>
+          <div>
+            <span style="color: #e11d48; display: block; font-size: 10px; text-transform: uppercase;">Auditoria de Inconsistências</span>
+            <b style="font-size: 13px; color: #e11d48;">${totalAnomaliasPeriodo} duplicidades</b>
+          </div>
+        </div>
+        ` : ''}
+
+        <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">
+          <thead>
+            <tr style="background-color: #f1f5f9; border-bottom: 2px solid #cbd5e1; color: #334155;">
+              <th style="padding: 6px 8px;">ID</th>
+              <th style="padding: 6px 8px;">Participante</th>
+              <th style="padding: 6px 8px;">Data & Horário</th>
+              <th style="padding: 6px 8px;">Auditoria</th>
+              ${includeSignatures ? '<th style="padding: 6px 8px; text-align: center;">Assinatura / Traço</th>' : ''}
+            </tr>
+          </thead>
+          <tbody>
+            ${reportItems.map(item => {
+              const isAnom = anomalyMap.has(item.id);
+              return `
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                  <td style="padding: 6px 8px; font-family: monospace; font-weight: bold;">#${item.id}</td>
+                  <td style="padding: 6px 8px; font-weight: bold; color: #0f172a;">${item.nome}</td>
+                  <td style="padding: 6px 8px; font-family: monospace;">${item.data_hora}</td>
+                  <td style="padding: 6px 8px;">
+                    ${isAnom 
+                      ? `<span style="color: #e11d48; font-weight: bold;">[ALERTA: &lt;60s #${item.id}]</span>` 
+                      : `<span style="color: #10b981; font-weight: bold;">Regular</span>`}
+                  </td>
+                  ${includeSignatures ? `
+                    <td style="padding: 4px 8px; text-align: center;">
+                      <canvas id="print_canvas_${item.id}" width="128" height="48" style="width: 90px; height: 32px; border: 1px solid #cbd5e1; border-radius: 4px; background: #fff;"></canvas>
+                    </td>
+                  ` : ''}
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+
+        <div style="margin-top: 40px; display: flex; justify-content: space-between; text-align: center; font-size: 11px; color: #475569;">
+          <div style="width: 40%;">
+            <div style="border-top: 1px solid #94a3b8; padding-top: 6px;">Coordenação Geral UEMA Valoriza</div>
+          </div>
+          <div style="width: 40%;">
+            <div style="border-top: 1px solid #94a3b8; padding-top: 6px;">Auditoria de Conformidade e Registros</div>
+          </div>
+        </div>
+      `;
+
+      closeReportModal();
+
+      if (includeSignatures) {
+        reportItems.forEach(item => {
+          const cv = document.getElementById(`print_canvas_${item.id}`);
+          if (cv) renderRleToCanvas(item.rle_hex, cv, false);
+        });
+      }
+
+      setTimeout(() => {
+        window.print();
+      }, 250);
+    });
+
+    // --- EVENTOS DE INTERFACE E FILTROS ---
+    document.getElementById('filterSearch').addEventListener('input', applyFilters);
+    document.getElementById('filterDateStart').addEventListener('change', applyFilters);
+    document.getElementById('filterDateEnd').addEventListener('change', applyFilters);
+    document.getElementById('filterStatus').addEventListener('change', applyFilters);
+
+    document.getElementById('pageSizeSelect').addEventListener('change', function(e) {
+      pageSize = e.target.value;
+      currentPage = 1;
+      renderTable();
+    });
+
+    document.getElementById('btnResetFilters').addEventListener('click', () => {
+      document.getElementById('filterSearch').value = '';
+      document.getElementById('filterDateStart').value = '';
+      document.getElementById('filterDateEnd').value = '';
+      document.getElementById('filterStatus').value = 'all';
+      applyFilters();
+      showToast('Filtros restaurados.', 'info');
+    });
+
+    document.getElementById('btnFilterOnlyAnomalies').addEventListener('click', () => {
+      const statusSelect = document.getElementById('filterStatus');
+      statusSelect.value = 'anomalies';
+      applyFilters();
+      showToast('Filtrando apenas duplicidades (< 60s).', 'warning');
+    });
+
+    document.getElementById('btnOpenCreateModal').addEventListener('click', openCreateRecordModal);
+    document.getElementById('btnOpenReportModal').addEventListener('click', openReportModal);
+
+    window.addEventListener('resize', () => {
+      if (donutChartInstance) donutChartInstance.resize();
+      if (barChartInstance) barChartInstance.resize();
+    });
+
+    // --- INICIALIZAÇÃO DO SISTEMA ---
+    window.onload = function() {
+      setupSecurityLock();
+      setupSignaturePad();
+      runAuditAndPeakEngine(); // Inicia limpo sem registros embutidos
+    };
   </script>
 </body>
 </html>
